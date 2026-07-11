@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "noEmit": true,
+    // DOM lib is needed for SSR: src/render/share-page.tsx imports React
+    // components from src/web/** that reference DOM types in event handlers.
+    // workerd doesn't ship DOM at runtime, but those code paths never execute
+    // server-side (they're serialized to HTML attributes by renderToString),
+    // so this is type-info only.
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["@cloudflare/workers-types", "@cloudflare/vitest-pool-workers/types", "node", "vite/client"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "scripts/**/*.ts",
+    "test/**/*.ts",
+    "test/**/*.tsx",
+    "vitest.config.ts",
+    "worker-configuration.d.ts"
+  ],
+  "exclude": ["src/web/**", "test/web/**", "node_modules"]
+}

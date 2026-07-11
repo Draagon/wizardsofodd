@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022"],
+    // jsx: "react-jsx" picks the automatic runtime — no need for `import React`
+    // in each .tsx file. Set on the root config (in addition to the child
+    // configs that extend it) so esbuild — which Wrangler invokes during
+    // `wrangler deploy` to bundle the Worker — reads it. Without this at the
+    // root, the deployed Worker fails with `ReferenceError: React is not
+    // defined` when rendering share-page.tsx (esbuild defaults to the classic
+    // transform).
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+    // @cloudflare/vitest-pool-workers/types supplies the `cloudflare:test` module
+    // types (SELF, env, fetchMock) used by the test/ files; workers-types covers
+    // the runtime. The /types subpath is the new home in 0.16.x. node is needed
+    // for scripts/ and the build-pipeline sentinel test.
+    "types": ["@cloudflare/workers-types", "@cloudflare/vitest-pool-workers/types", "node"]
+  },
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.worker.json" },
+    { "path": "./tsconfig.web.json" }
+  ]
+}

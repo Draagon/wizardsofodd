@@ -1,0 +1,9 @@
+id: lorekeeper
+name: The Lorekeeper
+title: of Footnotes
+technique: rag
+bickersWith: [vexil, pib]
+usesSearch: true
+order: 3
+techniqueBlurb: "Searches the live web and answers with citations, grounding the take in sources you can check."
+defaultEnabled: true

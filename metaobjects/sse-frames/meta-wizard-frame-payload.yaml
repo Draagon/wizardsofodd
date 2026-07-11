@@ -1,0 +1,19 @@
+# Envelope value-object carried by the SSE `wizard` event.
+# One wizard's structured contribution to the council, with naming metadata
+# so the React reducer can render the WizardCard without an extra lookup.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: WizardFramePayload
+        children:
+          - field.string:
+              name: wizardId
+              required: true
+          - field.string:
+              name: wizardName
+              required: true
+          - field.object:
+              name: take
+              objectRef: WizardOutput
+              required: true

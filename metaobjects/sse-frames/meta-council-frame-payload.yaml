@@ -1,0 +1,12 @@
+# Envelope value-object carried by the SSE `council` event.
+# First frame in the stream — announces the share slug so the client can
+# build the share URL the moment the council starts running.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: CouncilFramePayload
+        children:
+          - field.string:
+              name: id
+              required: true

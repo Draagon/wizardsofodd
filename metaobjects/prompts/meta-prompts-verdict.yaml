@@ -1,0 +1,15 @@
+# The Clerk's verdict prompts (system + user) — consolidated from 2 one-node
+# files. Text lives external in data/templates/verdict/{system,user}.mustache.
+metadata:
+  package: wizardsofodd
+  children:
+    - template.prompt:
+        name: verdictSystem
+        payloadRef: VerdictSystemPayload
+        textRef: verdict/system
+        format: text
+    - template.prompt:
+        name: verdictUser
+        payloadRef: VerdictUserPayload
+        textRef: verdict/user
+        format: text

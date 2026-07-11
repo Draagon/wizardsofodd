@@ -1,0 +1,44 @@
+# MetaObjects drift verification — runs the FULL local gate in CI so a metadata
+# edit that wasn't regenerated (or a template that references a dropped payload
+# field) fails the build before merge.
+#
+# This runs `npm run demo:drift` (= meta verify --templates --codegen --prompts
+# data/templates) DIRECTLY rather than the official metaobjectsdev/meta-verify-action.
+# That action runs only --templates today and exposes no --codegen input, so it
+# would miss codegen drift — precisely what this project's per-target `targets`
+# setup makes catchable (see metaobjects.config.ts). Invoking the CLI directly keeps
+# CI and the local `npm run demo:drift` byte-for-byte identical: one gate, one command.
+#
+# When it fails: run `npm run gen:db`, commit the regenerated files, re-push.
+# (A @metaobjectsdev/* Dependabot bump lands here as a PR too, so every upgrade
+# publicly re-exercises the drift gate.)
+
+name: meta verify
+
+on:
+  pull_request:
+    paths:
+      - 'metaobjects/**'
+      - 'data/**'
+      - 'src/**'
+      - 'codegen/**'          # owned entity/queries/barrel generators (ADR-0034)
+      - 'package.json'
+      - 'metaobjects.config.ts'
+      - '.github/workflows/meta-verify.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read   # least-privilege: this job only reads the tree and runs the CLI
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22 # wrangler (via the postinstall `wrangler types`) needs Node >= 22
+          cache: npm
+      - run: npm ci
+      - run: npm run demo:drift

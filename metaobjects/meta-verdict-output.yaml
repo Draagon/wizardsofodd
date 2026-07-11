@@ -1,0 +1,37 @@
+# VerdictOutput — the Clerk's synthesized verdict, emitted via tool_use.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: VerdictOutput
+        children:
+          - field.enum:
+              name: stance
+              extends: guildVerdict
+              required: true
+          - field.float:
+              name: confidence
+              required: true
+          - field.string:
+              name: takeMarkdown
+              required: true
+          - field.object:
+              name: dissents
+              objectRef: Dissent
+              isArray: true
+              required: true
+          - field.enum:
+              name: evidenceQuality
+              extends: evidenceGrade
+              required: true
+          - field.string:
+              name: agreements
+              isArray: true
+              required: false
+          - field.string:
+              name: splits
+              isArray: true
+              required: false
+          - field.string:
+              name: verifyNote
+              required: false

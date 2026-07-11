@@ -1,0 +1,31 @@
+# Abstract field for URL-safe opaque short slugs.
+#
+# Concrete fields reference this via `extends: shortSlug` to inherit:
+#   maxLength: 8
+#   validator.required (slugs are never empty)
+#   validator.regex   (URL-safe alphabet excluding visually-confusable 0/O/1/I/l)
+#
+# Codegen propagates the regex into the Drizzle CHECK constraint AND the
+# Zod schema; one source of truth replaces the previous drift between
+# slug.ts (alphabet definition), the field's maxLength, and share.ts's
+# route-param regex (which used to accept 0/O/I/l/1 — passing inputs the
+# generator could never have produced).
+#
+# Used by: Council.id (council slugs). Any future entity needing a similar
+# short-slug PK should `extends: shortSlug` too. Change the alphabet here
+# once; every consumer updates on the next `npm run gen:db`.
+#
+# Lives in metaobjects/abstracts/ by convention so contributors know to look
+# here for shape-reuse declarations vs concrete entities elsewhere.
+
+metadata:
+  package: wizardsofodd
+  children:
+    - field.string:
+        name: shortSlug
+        abstract: true
+        maxLength: 8
+        children:
+          - validator.required: {}
+          - validator.regex:
+              pattern: "^[abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$"

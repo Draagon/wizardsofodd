@@ -1,0 +1,9 @@
+id: fabula
+name: Fabula
+title: the Far-Fetched
+technique: analogy-mapping
+bickersWith: [pib]
+usesSearch: false
+order: 9
+techniqueBlurb: "Answers by analogy — maps your question onto a wildly different domain where the answer is obvious, then carries the lesson back."
+defaultEnabled: false

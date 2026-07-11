@@ -1,0 +1,9 @@
+id: tally
+name: Tally
+title: of the Hidden Ledger
+technique: incentive-analysis
+bickersWith: [lorekeeper]
+usesSearch: false
+order: 8
+techniqueBlurb: "Follows the incentives — ignores what everyone says and asks who actually benefits and what behaviour the situation quietly rewards."
+defaultEnabled: false

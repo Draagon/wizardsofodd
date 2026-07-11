@@ -1,0 +1,29 @@
+# TurnLens — projection of one prior wizard's turn shown to subsequent wizards.
+# Phase O: carries the WizardOutput fields (stance + takeMarkdown + oneLineSummary
+# + confidence) so downstream wizards can reason about prior takes in structured
+# form.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: TurnLens
+        children:
+          - field.string:
+              name: wizardId
+              required: true
+          - field.string:
+              name: wizardName
+              required: true
+          - field.enum:
+              name: stance
+              extends: wizardStance
+              required: true
+          - field.string:
+              name: takeMarkdown
+              required: true
+          - field.string:
+              name: oneLineSummary
+              required: true
+          - field.float:
+              name: confidence
+              required: true

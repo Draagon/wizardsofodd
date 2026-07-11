@@ -1,0 +1,9 @@
+id: pib
+name: Pib
+title: the Smol
+technique: decomposition-and-calibration
+bickersWith: [grumbel, lorekeeper]
+usesSearch: false
+order: 5
+techniqueBlurb: "Breaks the question into parts, answers each, and attaches honest, calibrated confidence to the whole."
+defaultEnabled: true

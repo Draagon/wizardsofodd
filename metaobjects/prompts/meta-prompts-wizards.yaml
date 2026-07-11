@@ -1,0 +1,114 @@
+# All wizard prompts (system + user) for the 10 personas — consolidated from 20
+# one-node files per the file-organization convention (one file per domain
+# concept, multiple nodes per file). The prompt TEXT lives external, in
+# data/templates/wizards/<id>-{system,user}.mustache; these nodes bind each
+# renderable to its payload value-object.
+#
+# payloadRef + format repeat per node by necessity: they can't be hoisted into an
+# abstract template.prompt + extends, because the loader requires @textRef on
+# EVERY template.prompt (own-only) — including the abstract, which omits it — so an
+# abstract fails to load. (verify reads effective attrs, but the loader's
+# required-attr check is own-only.)
+metadata:
+  package: wizardsofodd
+  children:
+    - template.prompt:
+        name: brikSystem
+        payloadRef: WizardSystemPayload
+        textRef: wizards/brik-system
+        format: text
+    - template.prompt:
+        name: brikUser
+        payloadRef: WizardUserPayload
+        textRef: wizards/brik-user
+        format: text
+    - template.prompt:
+        name: dominoSystem
+        payloadRef: WizardSystemPayload
+        textRef: wizards/domino-system
+        format: text
+    - template.prompt:
+        name: dominoUser
+        payloadRef: WizardUserPayload
+        textRef: wizards/domino-user
+        format: text
+    - template.prompt:
+        name: fabulaSystem
+        payloadRef: WizardSystemPayload
+        textRef: wizards/fabula-system
+        format: text
+    - template.prompt:
+        name: fabulaUser
+        payloadRef: WizardUserPayload
+        textRef: wizards/fabula-user
+        format: text
+    - template.prompt:
+        name: grumbelSystem
+        payloadRef: WizardSystemPayload
+        textRef: wizards/grumbel-system
+        format: text
+    - template.prompt:
+        name: grumbelUser
+        payloadRef: WizardUserPayload
+        textRef: wizards/grumbel-user
+        format: text
+    - template.prompt:
+        name: lorekeeperSystem
+        payloadRef: WizardSystemPayload
+        textRef: wizards/lorekeeper-system
+        format: text
+    - template.prompt:
+        name: lorekeeperUser
+        payloadRef: WizardUserPayload
+        textRef: wizards/lorekeeper-user
+        format: text
+    - template.prompt:
+        name: nixSystem
+        payloadRef: WizardSystemPayload
+        textRef: wizards/nix-system
+        format: text
+    - template.prompt:
+        name: nixUser
+        payloadRef: WizardUserPayload
+        textRef: wizards/nix-user
+        format: text
+    - template.prompt:
+        name: ozzimandiasSystem
+        payloadRef: WizardSystemPayload
+        textRef: wizards/ozzimandias-system
+        format: text
+    - template.prompt:
+        name: ozzimandiasUser
+        payloadRef: WizardUserPayload
+        textRef: wizards/ozzimandias-user
+        format: text
+    - template.prompt:
+        name: pibSystem
+        payloadRef: WizardSystemPayload
+        textRef: wizards/pib-system
+        format: text
+    - template.prompt:
+        name: pibUser
+        payloadRef: WizardUserPayload
+        textRef: wizards/pib-user
+        format: text
+    - template.prompt:
+        name: tallySystem
+        payloadRef: WizardSystemPayload
+        textRef: wizards/tally-system
+        format: text
+    - template.prompt:
+        name: tallyUser
+        payloadRef: WizardUserPayload
+        textRef: wizards/tally-user
+        format: text
+    - template.prompt:
+        name: vexilSystem
+        payloadRef: WizardSystemPayload
+        textRef: wizards/vexil-system
+        format: text
+    - template.prompt:
+        name: vexilUser
+        payloadRef: WizardUserPayload
+        textRef: wizards/vexil-user
+        format: text

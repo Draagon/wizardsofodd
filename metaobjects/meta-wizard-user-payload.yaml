@@ -1,0 +1,24 @@
+# Payload for a wizard's user-prompt body — the question, prior takes, sources.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: WizardUserPayload
+        children:
+          - field.string:
+              name: question
+              required: true
+          - field.object:
+              name: prior
+              objectRef: TurnLens
+              isArray: true
+          - field.boolean:
+              name: hasPrior
+              required: true
+          - field.object:
+              name: sources
+              objectRef: SourceLens
+              isArray: true
+          - field.boolean:
+              name: hasSources
+              required: true

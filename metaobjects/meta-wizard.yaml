@@ -1,0 +1,44 @@
+# Wizard — identity + behavior policy for one persona.
+# Instance data lives in data/wizards/<id>.yaml; the personality itself lives in
+# data/templates/wizards/<id>-{system,user}.mustache. Both live OUTSIDE metaobjects/
+# because loadMemory() treats every file under metaobjects/ as metadata.
+# Portrait image is derived by convention: /portraits/<id>.webp
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: Wizard
+        children:
+          - field.string:
+              name: id
+              maxLength: 32
+              required: true
+          - field.string:
+              name: name
+              maxLength: 128
+              required: true
+          - field.string:
+              name: title
+              maxLength: 128
+              required: true
+          - field.string:
+              name: technique
+              maxLength: 256
+              required: true
+          - field.string:
+              name: bickersWith
+              isArray: true
+              required: true
+          - field.boolean:
+              name: usesSearch
+              required: true
+          - field.int:
+              name: order
+              required: false
+          - field.string:
+              name: techniqueBlurb
+              maxLength: 280
+              required: true
+          - field.boolean:
+              name: defaultEnabled
+              required: true

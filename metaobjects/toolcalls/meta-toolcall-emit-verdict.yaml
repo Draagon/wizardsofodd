@@ -1,0 +1,37 @@
+# template.toolcall for the emit_verdict Anthropic tool-call wrapper.
+# See meta-toolcall-emit-wizard-take.yaml for the cross-cutting note.
+#
+# @fallback is the canned VerdictOutput returned when BOTH the initial call
+# and the retry-with-reminder fail. Without it the wrapper rethrows on
+# double-failure (which is what emit-wizard-take does — the orchestrator
+# catches that and emits an error event for the affected wizard). The
+# verdict, in contrast, must always produce something the visitor can see,
+# so the fallback lets the council still complete and frame the wizards'
+# takes above as the substance.
+
+metadata:
+  package: wizardsofodd
+  children:
+    - template.toolcall:
+        name: emitVerdict
+        toolName: emit_verdict
+        payloadRef: VerdictOutput
+        retryReminder: |-
+          Your previous response was not a valid tool call. Call the named tool with an input matching its JSON schema. Do not include any text outside the tool call.
+        children:
+          # @fallback carries a structured (object) value. Under strict load
+          # (ADR-0023) an undeclared @-attr is ERR_UNKNOWN_ATTR, so the canned
+          # payload rides the registered attr.properties bag (verbatim-object
+          # storage, exempt from the strict-attr check). The structured-completion
+          # generator reads it back via the resolving attr(TEMPLATE_ATTR_FALLBACK).
+          - attr.properties:
+              name: fallback
+              value:
+                stance: unanswerable
+                confidence: 0
+                takeMarkdown: "The Clerk could not reach a decision; the wizards' takes are above."
+                dissents: []
+                evidenceQuality: none
+                agreements: []
+                splits: []
+                verifyNote: "The Guild could not converge — read the wizards' takes above and verify anything important yourself."

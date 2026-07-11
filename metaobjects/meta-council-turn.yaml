@@ -1,0 +1,72 @@
+# CouncilTurn — one wizard's contribution to a council, or an error frame.
+# Phase A entity; retrofitted to YAML in Phase F. Structured columns in Phase O.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.entity:
+        name: CouncilTurn
+        children:
+          - source.rdb:
+              table: council_turns
+          - field.string:
+              name: councilId
+              maxLength: 16
+              required: true
+          - field.int:
+              name: ordinal
+              required: true
+          # VESTIGIAL: the follow-up-rounds feature was removed (commit 6fa5567).
+          # This column is kept rather than dropped because D1 migrations are
+          # append-only and dropping it would force a table rewrite; every turn
+          # now records round 0. The metadata + code no longer pretend rounds exist.
+          - field.int:
+              name: round
+              required: true
+          - field.string:
+              name: wizardId
+              maxLength: 32
+              required: true
+          - field.string:
+              name: wizardName
+              maxLength: 128
+              required: true
+          - field.enum:
+              name: kind
+              values: [wizard, error]
+              required: true
+          - field.enum:
+              name: stance
+              extends: wizardStance
+              required: true
+          - field.string:
+              name: takeMarkdown
+              required: true
+          - field.string:
+              name: oneLineSummary
+              required: true
+          - field.float:
+              name: confidence
+              required: true
+          - field.string:
+              name: keyClaims
+              column: key_claims_json
+              isArray: true
+              required: true
+          - field.object:
+              name: citations
+              column: citations_json
+              objectRef: SourceLens
+              isArray: true
+              storage: jsonb   # explicit on the persisted column (the default; stated for clarity)
+              required: false
+          - identity.primary:
+              fields: [councilId, ordinal]
+          - identity.reference:
+              name: fk_council
+              fields: [councilId]
+              references: Council
+          - relationship.composition:
+              name: council
+              objectRef: Council
+              cardinality: one
+              onDelete: cascade

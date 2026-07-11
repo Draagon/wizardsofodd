@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.output/
+.vercel/
+*.tsbuildinfo
+
+# Cloudflare
+.wrangler/
+.dev.vars
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Worktrees / agent state
+# MetaObjects agent context — track the shared skills, keep the rest of .claude/ local
+.claude/*
+!.claude/skills/
+.worktrees/
+worker-configuration.d.ts
+# MetaObjects agent context — track the always-on + manifest, keep other tool state local
+/.metaobjects/*
+!/.metaobjects/AGENTS.md
+!/.metaobjects/CLAUDE.md
+!/.metaobjects/.agent-context.json

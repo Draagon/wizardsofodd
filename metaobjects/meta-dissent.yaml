@@ -1,0 +1,13 @@
+# Dissent — one wizard's disagreement attached to a verdict.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: Dissent
+        children:
+          - field.string:
+              name: wizardId
+              required: true
+          - field.string:
+              name: reason
+              required: true

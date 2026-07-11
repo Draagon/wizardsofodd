@@ -1,0 +1,20 @@
+# template.toolcall for the emit_wizard_take Anthropic tool-call wrapper.
+#
+# Recognized by the wizardsofoddProvider (src/codegen/wizardsofodd-provider.ts)
+# which registers the template.toolcall subtype. The structured-completion
+# generator walks every template.toolcall node and emits one typed
+# `callEmit<Name>(params)` wrapper in src/llm/generated/toolcalls.ts.
+#
+# No fallback here — on double-failure the wrapper rethrows. The orchestrator
+# catches the throw and emits an in-character error event for the affected
+# wizard while the council continues with the remaining wizards.
+
+metadata:
+  package: wizardsofodd
+  children:
+    - template.toolcall:
+        name: emitWizardTake
+        toolName: emit_wizard_take
+        payloadRef: WizardOutput
+        retryReminder: |-
+          Your previous response was not a valid tool call. Call the named tool with an input matching its JSON schema. Do not include any text outside the tool call.

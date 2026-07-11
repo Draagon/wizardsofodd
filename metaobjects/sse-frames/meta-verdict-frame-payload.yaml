@@ -1,0 +1,12 @@
+# Envelope value-object carried by the SSE `verdict` event.
+# The Clerk's synthesized verdict closes out the council.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: VerdictFramePayload
+        children:
+          - field.object:
+              name: verdict
+              objectRef: VerdictOutput
+              required: true

@@ -1,0 +1,9 @@
+id: ozzimandias
+name: Ozzimandias
+title: the Inevitable
+technique: historical-pattern
+bickersWith: [grumbel]
+usesSearch: false
+order: 4
+techniqueBlurb: "Finds the historical pattern your situation rhymes with and reads the likely outcome forward from precedent."
+defaultEnabled: true

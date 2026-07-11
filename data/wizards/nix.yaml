@@ -1,0 +1,9 @@
+id: nix
+name: Nix
+title: the Subtractor
+technique: via-negativa
+bickersWith: [grumbel]
+usesSearch: false
+order: 10
+techniqueBlurb: "Improves by subtraction — instead of what to add, tells you what to stop, remove, or avoid."
+defaultEnabled: false

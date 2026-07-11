@@ -1,0 +1,346 @@
+:root {
+  --ink: #ece7da;
+  --bg: #15131f;
+  --panel: #221d33;
+  --accent: #c9a227;
+  --accent-warm: #f7df9a;
+  --accent-deep: #8c6b1f;
+  --rule: #3a3252;
+  --verdict: #c9a227; /* gold authority; was green */
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background:
+    linear-gradient(rgba(21, 19, 31, 0.7), rgba(21, 19, 31, 0.85)),
+    url("/background.webp") center/cover fixed no-repeat,
+    var(--bg);
+  color: var(--ink);
+  font-family: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  min-height: 100vh;
+}
+
+/* ───── hall + header ───── */
+.hall { max-width: 760px; margin: 0 auto; padding: 3.5rem 1.25rem 6rem; }
+.hall-header { text-align: center; margin-bottom: 2rem; }
+
+/* SPA + share-page container. The React rewrite (Phase U) renders
+   .homepage / .masthead / .council instead of the vanilla .hall, but these
+   were never styled — so the whole app rendered full viewport width with
+   sprawling, unreadable lines (the "3 columns / jammed" report). Constrain to
+   a centered reading column; cards inside .council inherit the width. */
+.homepage { max-width: 760px; margin: 0 auto; padding: 3rem 1.25rem 6rem; }
+.masthead { text-align: center; margin-bottom: 1.75rem; }
+.council { margin-top: 1.5rem; }
+
+h1 {
+  font-family: "Cinzel", "Trajan Pro", Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  letter-spacing: 0.14em;
+  margin: 0 0 0.6rem;
+  line-height: 1.1;
+  background: linear-gradient(180deg, var(--accent-warm) 0%, var(--accent) 50%, var(--accent-deep) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* Layered "shading and shit": warm aura, soft drop shadow, faint dark outline */
+  filter:
+    drop-shadow(0 0 18px rgba(247, 223, 154, 0.25))
+    drop-shadow(0 2px 8px rgba(0, 0, 0, 0.75));
+  text-shadow:
+    0 1px 0 rgba(140, 107, 31, 0.4),
+    0 0 30px rgba(247, 223, 154, 0.15);
+}
+
+.flourish {
+  display: flex; align-items: center; justify-content: center;
+  gap: .9rem; margin: 0 auto .85rem; max-width: 480px;
+}
+.flourish-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(201, 162, 39, 0.6) 50%, transparent 100%);
+}
+.flourish-seal {
+  width: 36px; height: 36px; border-radius: 50%;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 8px rgba(201, 162, 39, 0.5));
+}
+
+.tagline {
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--accent-warm);
+  opacity: 0.85;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+/* ───── form ───── */
+form { display: flex; flex-direction: column; gap: .85rem; margin: 1.8rem 0 2rem; }
+textarea {
+  width: 100%;
+  background: rgba(34, 29, 51, 0.85);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 1rem;
+  font: inherit;
+  font-size: 1.05rem;
+  resize: vertical;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15);
+}
+textarea::placeholder { color: rgba(236, 231, 218, 0.4); font-style: italic; }
+
+button {
+  align-self: flex-start;
+  background: linear-gradient(180deg, var(--accent-warm) 0%, var(--accent) 60%, var(--accent-deep) 100%);
+  color: #1a1626;
+  border: 0;
+  border-radius: 999px;
+  padding: .75rem 1.6rem;
+  font: inherit;
+  font-family: "Cinzel", serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  box-shadow:
+    0 1px 0 rgba(247, 223, 154, 0.4) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset,
+    0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+}
+button:hover:not([disabled]) {
+  filter: brightness(1.08);
+  box-shadow:
+    0 1px 0 rgba(247, 223, 154, 0.4) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset,
+    0 6px 18px rgba(201, 162, 39, 0.35);
+  transform: translateY(-1px);
+}
+button:active:not([disabled]) { transform: translateY(0); }
+button[disabled] { opacity: .55; cursor: wait; filter: grayscale(0.3); }
+
+/* ───── cards ───── */
+.card {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  background: rgba(34, 29, 51, 0.9);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  padding: 1.1rem 1.2rem;
+  margin: .9rem 0;
+  animation: rise .35s ease both;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(201, 162, 39, 0.15);
+}
+.card .portrait {
+  flex: 0 0 84px; width: 84px; height: 84px;
+  border-radius: 6px; object-fit: cover; display: block;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.card .body { flex: 1 1 auto; min-width: 0; }
+/* card interior — a single stacked-prose body (React component class names) */
+.card header {
+  display: flex; align-items: baseline; flex-wrap: wrap;
+  gap: .6rem; margin: 0 0 .4rem;
+}
+.card header h2 {
+  font-family: "Cinzel", serif; font-weight: 600;
+  letter-spacing: 0.04em; font-size: 1.05rem;
+  color: var(--accent); margin: 0;
+}
+.stance {
+  font-size: .7rem; text-transform: uppercase; letter-spacing: .08em;
+  border: 1px solid var(--rule); border-radius: 999px;
+  padding: .1rem .55rem; color: var(--accent-warm);
+}
+.confidence, .evidence { font-size: .78rem; opacity: .75; }
+.card .take p { margin: 0 0 .55rem; }
+.card .take p:last-child { margin-bottom: 0; }
+/* keyClaims / citations / the verdict map collapse behind <details> */
+.card .body > details { margin: .45rem 0 0; }
+.card .body > details > summary {
+  cursor: pointer; user-select: none;
+  font-size: .8rem; color: var(--accent); opacity: .8;
+}
+.card .body p { margin: 0; }
+
+/* Verdict card: gold authority — matches the seal */
+.card-verdict {
+  border-left-color: var(--verdict);
+  border-left-width: 5px;
+  background:
+    linear-gradient(90deg, rgba(201, 162, 39, 0.05), rgba(34, 29, 51, 0.9) 40%);
+}
+.card-verdict header h2 { color: var(--accent-warm); }
+.card-error, .card-stream-error { opacity: .72; font-style: italic; }
+
+@media (max-width: 540px) {
+  .hall { padding: 2.5rem 1rem 5rem; }
+  .card .portrait { flex-basis: 64px; width: 64px; height: 64px; }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ───── Meet the Guild preview (bottom of page, hidden once a question is asked) ───── */
+#guild-preview { margin: 3.5rem 0 1rem; }
+#guild-preview.hidden { display: none; }
+
+.preview-flourish {
+  display: flex; align-items: center; justify-content: center;
+  gap: 1rem; margin: 0 auto 1.5rem; max-width: 520px;
+}
+.preview-label {
+  font-family: "Cinzel", serif;
+  font-size: 0.9rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.preview-grid {
+  list-style: none; padding: 0; margin: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+}
+.wizard-preview {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: .5rem;
+  opacity: 0.85;
+  transition: opacity .2s ease, transform .2s ease;
+}
+.wizard-preview:hover { opacity: 1; transform: translateY(-2px); }
+.wizard-preview img {
+  width: 72px; height: 72px; border-radius: 6px; object-fit: cover; display: block;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.wizard-preview strong {
+  font-family: "Cinzel", serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  display: block;
+  line-height: 1.2;
+}
+.wizard-preview .epithet {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  display: block;
+  line-height: 1.2;
+}
+.wizard-preview .voice {
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--accent-warm);
+  opacity: 0.75;
+  display: block;
+  margin-top: .25rem;
+  line-height: 1.3;
+}
+
+@media (max-width: 720px) {
+  .preview-grid { grid-template-columns: repeat(3, 1fr); gap: 1.25rem .75rem; }
+  .wizard-preview:nth-child(4), .wizard-preview:nth-child(5) {
+    /* Center the last 2 cards on a 3-col layout */
+    grid-column-end: span 1;
+  }
+}
+@media (max-width: 420px) {
+  .preview-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* --- Interactive guild gallery (W2) --- */
+.guild-count { text-align: center; color: var(--ink); opacity: 0.75; margin: 0.25rem 0 1rem; }
+
+.guild-grid {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem;
+}
+.guild-grid > li { margin: 0; }
+
+button.guild-member {
+  display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
+  width: 8.5rem; background: none; color: inherit; font: inherit;
+  border: 1px solid transparent; border-radius: 12px; padding: 0.6rem 0.4rem;
+  cursor: pointer; position: relative; text-align: center;
+  transition: border-color 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+}
+button.guild-member:hover,
+button.guild-member:focus-visible { border-color: var(--accent); outline: none; background: var(--panel); }
+button.guild-member[aria-pressed="true"] { border-color: var(--rule); }
+
+/* Gallery thumbnail portrait. The .portrait-small class the component uses had
+   no sizing rule, so portraits fell back to their natural 1024px size. Constrain
+   to the card width as a square thumbnail (mirrors .card .portrait styling). */
+.guild-member .portrait,
+.portrait-small {
+  width: 100%; height: auto; aspect-ratio: 1 / 1;
+  object-fit: cover; display: block;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Disabled wizard: greyed-out portrait + dimmed card */
+.guild-member-off { opacity: 0.5; }
+.guild-member-off .portrait { filter: grayscale(1); }
+
+button.guild-member .title { font-size: 0.8rem; opacity: 0.85; }
+button.guild-member .technique { font-size: 0.72rem; color: var(--accent-warm); }
+
+/* Technique blurb: hidden until hover/focus (always exposed via aria-label) */
+.technique-blurb {
+  display: none; position: absolute; bottom: calc(100% + 6px); left: 50%;
+  transform: translateX(-50%); width: max-content; max-width: 220px; z-index: 5;
+  padding: 0.5rem 0.6rem; background: var(--panel); color: var(--ink);
+  border: 1px solid var(--accent); border-radius: 8px;
+  font-size: 0.8rem; line-height: 1.3; text-align: left; pointer-events: none;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+button.guild-member:hover .technique-blurb,
+button.guild-member:focus-visible .technique-blurb { display: block; }
+
+.form-hint { text-align: center; color: var(--accent-warm); opacity: 0.9; margin: 0.25rem 0; font-size: 0.9rem; }
+
+/* --- Honest verdict map (W3) --- */
+.agreement-map { margin: 1rem 0; display: grid; gap: 0.75rem; }
+.agreement-map h3 { margin: 0 0 0.25rem; font-size: 0.95rem; }
+.agreement-map .agreements h3 { color: var(--accent-warm); }
+.agreement-map .splits h3 { color: var(--accent); }
+.agreement-map ul { margin: 0; padding-left: 1.1rem; }
+.verify-note {
+  margin: 1rem 0 0; padding: 0.6rem 0.8rem; border-left: 3px solid var(--accent);
+  background: var(--panel); border-radius: 6px; font-size: 0.85rem; opacity: 0.9;
+}
+
+/* --- Follow-up rounds + form (W4b) --- */
+.followup-round { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--rule); }
+.followup-question { font-style: italic; color: var(--accent-warm); margin: 0 0 0.75rem; }
+
+.followup-form { margin-top: 1.5rem; padding: 1rem; border: 1px solid var(--rule); border-radius: 12px; background: var(--panel); }
+.followup-form h3 { margin: 0 0 0.5rem; }
+.followup-targets { border: none; padding: 0; margin: 0 0 0.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; }
+.followup-targets legend { padding: 0; opacity: 0.85; font-size: 0.9rem; }
+.followup-targets label { display: inline-flex; align-items: center; gap: 0.3rem; }
+.followup-form .select-all { background: none; border: 1px solid var(--accent); color: var(--accent-warm); border-radius: 8px; padding: 0.15rem 0.5rem; cursor: pointer; font: inherit; font-size: 0.85rem; }
+.followup-form textarea { width: 100%; box-sizing: border-box; }

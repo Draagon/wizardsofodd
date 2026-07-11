@@ -1,0 +1,9 @@
+# template.streamFrame — the SSE `verdict` event.
+# Emitted last (before `done`); carries the Clerk's synthesized verdict.
+metadata:
+  package: wizardsofodd
+  children:
+    - template.streamFrame:
+        name: verdictFrame
+        eventName: verdict
+        payloadRef: VerdictFramePayload

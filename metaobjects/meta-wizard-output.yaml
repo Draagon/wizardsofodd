@@ -1,0 +1,38 @@
+# WizardOutput — the typed shape each wizard emits via Anthropic tool_use.
+# takeMarkdown is the free-form prose users actually read; the rest is
+# structured signal for the Clerk's verdict synthesis.
+#
+# This one object.value fans out to: src/db/generated/WizardOutput.ts (Zod), the
+# render payload in src/render/generated/prompts.ts, the emit_wizard_take tool
+# schema in src/llm/generated/toolcalls.ts, and the `wizard` SSE frame in
+# src/web/generated/council-frames.ts — rename a field and the drift gate fails
+# everywhere it's used at once. (Tour: docs/how-metaobjects-is-used.md.)
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: WizardOutput
+        children:
+          - field.enum:
+              name: stance
+              extends: wizardStance
+              required: true
+          - field.string:
+              name: takeMarkdown
+              required: true
+          - field.string:
+              name: oneLineSummary
+              maxLength: 140
+              required: true
+          - field.float:
+              name: confidence
+              required: true
+          - field.string:
+              name: keyClaims
+              isArray: true
+              required: true
+          - field.object:
+              name: citations
+              objectRef: SourceLens
+              isArray: true
+              required: false

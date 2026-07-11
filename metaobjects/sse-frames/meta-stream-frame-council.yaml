@@ -1,0 +1,16 @@
+# template.streamFrame — the SSE `council` event.
+# First frame the orchestrator emits when the stream opens; announces the
+# share slug so the client can build the share URL while the wizards are
+# still thinking.
+#
+# Recognized by the wizardsofoddProvider (src/codegen/wizardsofodd-provider.ts)
+# which registers the template.streamFrame subtype. The sse-frames generator
+# walks every template.streamFrame node and emits a CouncilFrame discriminated
+# union + typed sse() helper in src/web/generated/council-frames.ts.
+metadata:
+  package: wizardsofodd
+  children:
+    - template.streamFrame:
+        name: councilFrame
+        eventName: council
+        payloadRef: CouncilFramePayload

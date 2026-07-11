@@ -1,0 +1,20 @@
+# Payload for the Clerk's verdict system prompt.
+#
+# rosterJoined is the pre-joined, comma-separated form of each wizard's
+# fullName ("name title"), e.g. "Grumbel the Overcaffeinated, Madame Vexil
+# the Riddling, …". Mustache is logic-less and cannot do separator-joined
+# iteration; the projection layer joins eagerly so the template can drop
+# it in as `{{rosterJoined}}`.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: VerdictSystemPayload
+        children:
+          - field.object:
+              name: wizards
+              objectRef: Wizard
+              isArray: true
+          - field.string:
+              name: rosterJoined
+              required: true

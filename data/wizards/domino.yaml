@@ -1,0 +1,9 @@
+id: domino
+name: Domino
+title: the Patient
+technique: second-order-effects
+bickersWith: [grumbel]
+usesSearch: false
+order: 7
+techniqueBlurb: "Traces the second- and third-order effects: grants the obvious first step, then follows the chain of consequences to what nobody planned for."
+defaultEnabled: false

@@ -1,0 +1,71 @@
+# Council — persisted record of one Wizards of Odd session.
+# Phase A entity; retrofitted to YAML in Phase F. Verdict columns expanded in Phase O.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.entity:
+        name: Council
+        children:
+          - source.rdb:
+              table: councils
+          - field.string:
+              name: id
+              extends: shortSlug   # see metaobjects/abstracts/meta-short-slug-field.yaml
+          - field.string:
+              name: visitorId
+              maxLength: 64
+              required: true
+          - field.string:
+              name: question
+              required: true
+          - field.enum:
+              name: status
+              values: [pending, partial, complete, error]
+              required: true
+          - field.enum:
+              name: verdictStance
+              extends: guildVerdict
+              required: false
+          - field.float:
+              name: verdictConfidence
+              required: false
+          - field.string:
+              name: verdictMarkdown
+              required: false
+          - field.enum:
+              name: verdictEvidenceQuality
+              extends: evidenceGrade
+              required: false
+          - field.object:
+              name: dissents
+              column: dissents_json
+              objectRef: Dissent
+              isArray: true
+              storage: jsonb   # explicit on the persisted column (the default; stated for clarity)
+              required: false
+          - field.string:
+              name: verdictAgreements
+              column: verdict_agreements_json
+              isArray: true
+              required: false
+          - field.string:
+              name: verdictSplits
+              column: verdict_splits_json
+              isArray: true
+              required: false
+          - field.string:
+              name: verdictVerifyNote
+              column: verdict_verify_note
+              required: false
+          # createdAt/completedAt are epoch-millis stored as field.long (INTEGER),
+          # matching the live D1 schema. Deliberately NOT field.timestamp: the TS
+          # sqlite timestamp codec is string-mode, which would change the column
+          # type + wire format. This is the match-the-code choice, not an oversight.
+          - field.long:
+              name: createdAt
+              required: true
+          - field.long:
+              name: completedAt
+              required: false
+          - identity.primary:
+              fields: [id]

@@ -1,0 +1,13 @@
+# Envelope value-object carried by the SSE `done` event.
+# Terminal frame — signals the stream has been drained cleanly. The boolean
+# `ok` rides as a sentinel so the client can distinguish a clean close from
+# a connection drop mid-stream.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: DoneFramePayload
+        children:
+          - field.boolean:
+              name: ok
+              required: true

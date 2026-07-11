@@ -1,0 +1,9 @@
+id: brik
+name: Brik
+title: the Foundational
+technique: first-principles
+bickersWith: [ozzimandias]
+usesSearch: false
+order: 6
+techniqueBlurb: "Strips your question down to first principles — only the facts that are definitely true — and rebuilds an answer from the ground up, ignoring how it's usually done."
+defaultEnabled: false

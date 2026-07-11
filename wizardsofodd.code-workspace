@@ -1,0 +1,55 @@
+{
+  "folders": [
+    {
+      "name": "🧙 wizardsofodd",
+      "path": "."
+    }
+  ],
+  "settings": {
+    // ── files / search ──
+    "files.exclude": {
+      "**/.DS_Store": true,
+      "**/.wrangler": true,
+      "**/node_modules": true,
+      "**/dist": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/.wrangler": true,
+      "**/dist": true,
+      "**/package-lock.json": true,
+      "public/portraits/**": true,
+      "public/*.webp": true,
+      "src/db/generated/**": true,
+      "migrations/**": true
+    },
+    "files.associations": {
+      "wrangler.jsonc": "jsonc",
+      "metaobjects.config.ts": "typescript",
+      ".dev.vars": "dotenv",
+      "*.meta.json": "jsonc"
+    },
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "editor.rulers": [100],
+
+    // ── TypeScript: use the workspace's installed tsc, not VS Code's bundled ──
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.tsc.autoDetect": "off",
+    "typescript.preferences.importModuleSpecifier": "relative",
+
+    // ── Vitest extension ──
+    "vitest.commandLine": "npx vitest"
+  },
+  "extensions": {
+    "recommendations": [
+      "vitest.explorer",
+      "cloudflare.vscode-cloudflare-workers",
+      "tamasfe.even-better-toml",
+      "editorconfig.editorconfig",
+      "yzhang.markdown-all-in-one",
+      "redhat.vscode-yaml",
+      "anthropic.claude-code"
+    ]
+  }
+}

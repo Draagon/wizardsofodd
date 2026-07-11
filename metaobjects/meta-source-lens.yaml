@@ -1,0 +1,17 @@
+# SourceLens — one search citation, used by Lorekeeper's RAG flow today
+# and by WizardOutput.citations in Phase O.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: SourceLens
+        children:
+          - field.string:
+              name: title
+              required: true
+          - field.string:
+              name: url
+              required: true
+          - field.string:
+              name: snippet
+              required: true

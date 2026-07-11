@@ -1,0 +1,18 @@
+# Envelope value-object carried by the SSE `error` event.
+# Emitted when a wizard's structured response failed to parse — the council
+# continues with the remaining wizards.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: ErrorFramePayload
+        children:
+          - field.string:
+              name: wizardId
+              required: true
+          - field.string:
+              name: wizardName
+              required: true
+          - field.string:
+              name: reason
+              required: true

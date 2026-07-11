@@ -1,0 +1,14 @@
+# Payload for the Clerk's verdict user prompt.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: VerdictUserPayload
+        children:
+          - field.string:
+              name: question
+              required: true
+          - field.object:
+              name: prior
+              objectRef: TurnLens
+              isArray: true

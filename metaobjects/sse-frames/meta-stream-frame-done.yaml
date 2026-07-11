@@ -1,0 +1,10 @@
+# template.streamFrame — the SSE `done` event.
+# Terminal frame the orchestrator emits in its `finally` block so clients
+# can distinguish a clean stream close from a connection drop mid-stream.
+metadata:
+  package: wizardsofodd
+  children:
+    - template.streamFrame:
+        name: doneFrame
+        eventName: done
+        payloadRef: DoneFramePayload

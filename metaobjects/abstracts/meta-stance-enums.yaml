@@ -1,0 +1,34 @@
+# Shared abstract enum vocabularies. Concrete fields reference these via
+# `extends: <name>` to inherit the `values` set, so each vocabulary is declared
+# ONCE and every consumer stays in lockstep — the drift `meta verify` exists to
+# catch. Codegen resolves inherited `values` through the effective accessors
+# (ADR-0039), and because several fields share each one, it also emits a single
+# generated enums module (src/db/generated/enums.ts) they all reference — the
+# de-duplication carries through to the generated code, not just the metadata.
+#
+# Names deliberately do NOT match any concrete field (Council.verdictStance,
+# VerdictOutput.evidenceQuality, …): a bare `extends` segment resolves against
+# root-level nodes, and a name that also exists as a field is ambiguous there.
+#
+#   wizardStance  — a wizard's position (WizardOutput.stance, TurnLens.stance, CouncilTurn.stance)
+#   guildVerdict  — the Guild's overall ruling (VerdictOutput.stance, Council.verdictStance)
+#   evidenceGrade — how grounded the takes were (VerdictOutput.evidenceQuality, Council.verdictEvidenceQuality)
+#
+# "yes"/"no" are quoted deliberately: a YAML-1.1 consumer (e.g. SnakeYAML in a
+# cross-language port) would coerce bare yes/no to booleans. Quoting keeps them
+# strings in every parser — the house rule for enum members that look boolean.
+metadata:
+  package: wizardsofodd
+  children:
+    - field.enum:
+        name: wizardStance
+        abstract: true
+        values: [supports, opposes, complicates, reframes, abstains]
+    - field.enum:
+        name: guildVerdict
+        abstract: true
+        values: ["yes", "no", it_depends, unanswerable]
+    - field.enum:
+        name: evidenceGrade
+        abstract: true
+        values: [strong, mixed, thin, none]

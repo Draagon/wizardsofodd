@@ -1,0 +1,22 @@
+# Payload for a wizard's system prompt. Personality is hardcoded in the .mustache file.
+#
+# rivalNamesJoined is the pre-joined, comma-separated form of rivalNames
+# (e.g. "Ozzimandias, Pib"). Mustache is logic-less and cannot insert a
+# separator between iterated array items; the projection layer joins the
+# list eagerly so the template can drop it in as `{{rivalNamesJoined}}`.
+# Empty when there are no rivals — the template treats it as a section so
+# the whole "You tend to bicker with…" line vanishes.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: WizardSystemPayload
+        children:
+          - field.string:
+              name: rivalNames
+              isArray: true
+          - field.string:
+              name: rivalNamesJoined
+          - field.int:
+              name: turnNumber
+              required: true

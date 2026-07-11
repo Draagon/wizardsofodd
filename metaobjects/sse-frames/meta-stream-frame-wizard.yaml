@@ -1,0 +1,10 @@
+# template.streamFrame — the SSE `wizard` event.
+# One per wizard contribution; carries the full structured WizardOutput plus
+# naming metadata for the React reducer.
+metadata:
+  package: wizardsofodd
+  children:
+    - template.streamFrame:
+        name: wizardFrame
+        eventName: wizard
+        payloadRef: WizardFramePayload

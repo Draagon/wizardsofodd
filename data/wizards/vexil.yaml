@@ -1,0 +1,9 @@
+id: vexil
+name: Madame Vexil
+title: the Riddling
+technique: inversion
+bickersWith: [lorekeeper]
+usesSearch: false
+order: 2
+techniqueBlurb: "Flips the question on its head — asks what would guarantee the opposite outcome — and reasons back from there."
+defaultEnabled: true

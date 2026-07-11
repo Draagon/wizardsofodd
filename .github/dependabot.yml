@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Group @metaobjectsdev/* bumps into one PR so the drift gate runs once per upgrade.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      metaobjects:
+        patterns:
+          - "@metaobjectsdev/*"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

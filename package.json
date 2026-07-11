@@ -43,7 +43,7 @@
     "@cloudflare/workers-types": "^4.20241127.0",
     "@metaobjectsdev/metadata": "^0.15.18",
     "@testing-library/react": "^16.3.2",
-    "@types/node": "^25.9.1",
+    "@types/node": "^26.1.1",
     "@types/react": "^18.3.29",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",

@@ -47,7 +47,7 @@
     "@types/react": "^18.3.29",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",
-    "jsdom": "^25.0.1",
+    "jsdom": "^29.1.1",
     "sharp": "^0.35.3",
     "ts-poet": "^6.12.0",
     "tsx": "^4.22.3",

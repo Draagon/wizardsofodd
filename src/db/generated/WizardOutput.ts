@@ -18,7 +18,7 @@ export const WizardOutputInsertSchema = z.object({
   stance: WizardStanceEnum,
   takeMarkdown: z.string().min(1),
   oneLineSummary: z.string().min(1).max(140),
-  confidence: z.number(),
+  confidence: z.number().min(0).max(1),
   keyClaims: z.array(z.string()),
   citations: z.array(SourceLensInsertSchema).optional(),
 });

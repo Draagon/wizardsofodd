@@ -12,6 +12,12 @@ metadata:
           - field.float:
               name: confidence
               required: true
+              # Enforce the 0–1 calibration the prompts promise, so an
+              # out-of-range value can't reach the tool schema or the UI.
+              children:
+                - validator.numeric:
+                    min: 0
+                    max: 1
           - field.string:
               name: takeMarkdown
               required: true

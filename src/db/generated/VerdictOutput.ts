@@ -24,7 +24,7 @@ export { type GuildVerdict } from "./enums";
 export { type EvidenceGrade } from "./enums";
 export const VerdictOutputInsertSchema = z.object({
   stance: GuildVerdictEnum,
-  confidence: z.number(),
+  confidence: z.number().min(0).max(1),
   takeMarkdown: z.string().min(1),
   dissents: z.array(DissentInsertSchema),
   evidenceQuality: EvidenceGradeEnum,

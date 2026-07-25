@@ -27,6 +27,13 @@ metadata:
           - field.float:
               name: confidence
               required: true
+              # The prompts promise a 0–1 calibration; enforce it so a model that
+              # returns e.g. 87 fails validation (and retries) instead of the
+              # out-of-range value flowing into the tool schema and the UI.
+              children:
+                - validator.numeric:
+                    min: 0
+                    max: 1
           - field.string:
               name: keyClaims
               isArray: true

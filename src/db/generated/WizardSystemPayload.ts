@@ -5,11 +5,11 @@ import { z } from "zod";
 
 export interface WizardSystemPayload {
   rivalNames?: string[];
-  rivalNamesJoined?: string;
+  rivalNamesCsv?: string;
   turnNumber: number;
 }
 export const WizardSystemPayloadInsertSchema = z.object({
   rivalNames: z.array(z.string()).optional(),
-  rivalNamesJoined: z.string().optional(),
+  rivalNamesCsv: z.string().optional(),
   turnNumber: z.number().int(),
 });

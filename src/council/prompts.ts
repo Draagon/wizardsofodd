@@ -71,7 +71,7 @@ export function buildWizardSystem(wizard: Wizard, all: readonly Wizard[]): strin
   const rivalNames = rivalNamesOf(wizard, all);
   const payload: WizardSystemPayload = {
     rivalNames,
-    rivalNamesJoined: rivalNames.join(", "),
+    rivalNamesCsv: rivalNames.join(", "),
     turnNumber,
   };
   // Mustache may produce trailing whitespace from section iteration; today's

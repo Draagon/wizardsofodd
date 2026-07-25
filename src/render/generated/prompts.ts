@@ -69,7 +69,7 @@ export interface WizardOutput {
 
 export interface WizardSystemPayload {
   rivalNames?: string[] | null;
-  rivalNamesJoined?: string | null;
+  rivalNamesCsv?: string | null;
   turnNumber: number;
 }
 

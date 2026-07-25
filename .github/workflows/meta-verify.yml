@@ -1,35 +1,31 @@
-# MetaObjects drift verification — runs the FULL local gate in CI so a metadata
-# edit that wasn't regenerated (or a template that references a dropped payload
-# field) fails the build before merge.
+# CI gate — the single required check on `main` (branch protection → context "verify").
 #
-# This runs `npm run demo:drift` (= meta verify --templates --codegen --prompts
-# data/templates) DIRECTLY rather than the official metaobjectsdev/meta-verify-action.
-# That action runs only --templates today and exposes no --codegen input, so it
-# would miss codegen drift — precisely what this project's per-target `targets`
-# setup makes catchable (see metaobjects.config.ts). Invoking the CLI directly keeps
-# CI and the local `npm run demo:drift` byte-for-byte identical: one gate, one command.
+# It runs the FULL local gate so a bad change (metadata not regenerated, a template
+# referencing a dropped payload field, a type break, a broken build, or a failing test)
+# fails BEFORE merge:
+#   • demo:drift = meta verify --templates --codegen --prompts data/templates
+#     (drift gate; run directly, not via metaobjectsdev/meta-verify-action, which only
+#      does --templates today — see metaobjects.config.ts per-target `targets`)
+#   • tsc -b     = typecheck the generated + hand-written code
+#   • build:web  = the production Vite build actually compiles
+#   • test       = the full vitest suite (runs without .dev.vars — no secrets needed)
 #
-# When it fails: run `npm run gen:db`, commit the regenerated files, re-push.
-# (A @metaobjectsdev/* Dependabot bump lands here as a PR too, so every upgrade
-# publicly re-exercises the drift gate.)
+# NO `paths:` filter, on purpose: this is a REQUIRED check, and the auto-merge flow
+# (.github/workflows/dependabot-auto-merge.yml) waits for it. A paths filter would let a
+# lockfile-only Dependabot PR skip the check, leaving the required status "pending"
+# forever and the PR un-mergeable — the exact failure that let updates pile up before.
+#
+# When it fails on a metadata/codegen change: run `npm run gen:db`, commit, re-push.
 
-name: meta verify
+name: CI
 
 on:
   pull_request:
-    paths:
-      - 'metaobjects/**'
-      - 'data/**'
-      - 'src/**'
-      - 'codegen/**'          # owned entity/queries/barrel generators (ADR-0034)
-      - 'package.json'
-      - 'metaobjects.config.ts'
-      - '.github/workflows/meta-verify.yml'
   push:
     branches: [main]
 
 permissions:
-  contents: read   # least-privilege: this job only reads the tree and runs the CLI
+  contents: read # least-privilege: this job only reads the tree and runs the gate
 
 jobs:
   verify:
@@ -38,7 +34,10 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
-          node-version: 22 # wrangler (via the postinstall `wrangler types`) needs Node >= 22
+          node-version: 22 # wrangler (postinstall `wrangler types`) needs Node >= 22
           cache: npm
       - run: npm ci
-      - run: npm run demo:drift
+      - run: npm run demo:drift # metadata / prompt / codegen drift gate
+      - run: npx tsc -b # typecheck generated + hand-written code
+      - run: npm run build:web # production build compiles
+      - run: npm test # full vitest suite (no secrets required)

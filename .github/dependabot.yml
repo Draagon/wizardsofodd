@@ -1,15 +1,40 @@
 version: 2
 updates:
-  # Group @metaobjectsdev/* bumps into one PR so the drift gate runs once per upgrade.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
+    # Cap open PRs so updates can't pile up unseen.
+    open-pull-requests-limit: 5
     groups:
+      # Our own packages: one PR per coordinated upgrade (the drift gate runs once).
       metaobjects:
         patterns:
           - "@metaobjectsdev/*"
+      # Everything else, routine bumps: ONE grouped PR. These auto-merge once CI is
+      # green (see .github/workflows/dependabot-auto-merge.yml).
+      npm-minor-patch:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "@metaobjectsdev/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Majors: ONE grouped PR, but NOT auto-merged — these get a human look.
+      npm-major:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "@metaobjectsdev/*"
+        update-types:
+          - "major"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"

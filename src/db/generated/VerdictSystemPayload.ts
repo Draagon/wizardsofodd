@@ -2,13 +2,11 @@
 // Source metadata: VerdictSystemPayload (VerdictSystemPayload)
 // Customize via VerdictSystemPayload.extra.ts in this directory.
 import { z } from "zod";
-import { Wizard, WizardInsertSchema } from "./Wizard";
+import { RosterLens, RosterLensInsertSchema } from "./RosterLens";
 
 export interface VerdictSystemPayload {
-  wizards?: Wizard[];
-  rosterJoined: string;
+  roster: RosterLens[];
 }
 export const VerdictSystemPayloadInsertSchema = z.object({
-  wizards: z.array(WizardInsertSchema).optional(),
-  rosterJoined: z.string().min(1),
+  roster: z.array(RosterLensInsertSchema),
 });

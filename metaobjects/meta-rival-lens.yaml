@@ -1,0 +1,18 @@
+# RivalLens — one rival wizard's display name for the "You tend to bicker
+# with…" line, plus a `last` flag. Mustache is logic-less and cannot insert a
+# separator between iterated items, so the system template joins the list with
+# ", " itself via {{^last}}, {{/last}}. Modelling the separator as a per-item
+# flag keeps the comma-joining prose IN the template (visible to `meta verify`)
+# instead of a code-side string builder — replaces the old rivalNamesJoined.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: RivalLens
+        children:
+          - field.string:
+              name: name
+              required: true
+          - field.boolean:
+              name: last
+              required: true

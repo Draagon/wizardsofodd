@@ -2,14 +2,15 @@
 // Source metadata: WizardSystemPayload (WizardSystemPayload)
 // Customize via WizardSystemPayload.extra.ts in this directory.
 import { z } from "zod";
+import { RivalLens, RivalLensInsertSchema } from "./RivalLens";
 
 export interface WizardSystemPayload {
-  rivalNames?: string[];
-  rivalNamesJoined?: string;
+  hasRivals: boolean;
+  rivals?: RivalLens[];
   turnNumber: number;
 }
 export const WizardSystemPayloadInsertSchema = z.object({
-  rivalNames: z.array(z.string()).optional(),
-  rivalNamesJoined: z.string().optional(),
+  hasRivals: z.boolean(),
+  rivals: z.array(RivalLensInsertSchema).optional(),
   turnNumber: z.number().int(),
 });

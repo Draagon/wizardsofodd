@@ -69,9 +69,13 @@ function rivalNamesOf(wizard: Wizard, all: readonly Wizard[]): string[] {
 export function buildWizardSystem(wizard: Wizard, all: readonly Wizard[]): string {
   const turnNumber = all.findIndex((w) => w.id === wizard.id) + 1;
   const rivalNames = rivalNamesOf(wizard, all);
+  // Project the rival list into RivalLens rows (name + a `last` flag). The
+  // system template does its own ", " joining via {{^last}}, {{/last}} in the
+  // shared wizards/bicker partial, so the separator prose lives in the template
+  // (visible to `meta verify`), never in a code-side .join(", ").
   const payload: WizardSystemPayload = {
-    rivalNames,
-    rivalNamesJoined: rivalNames.join(", "),
+    hasRivals: rivalNames.length > 0,
+    rivals: rivalNames.map((name, i) => ({ name, last: i === rivalNames.length - 1 })),
     turnNumber,
   };
   // Mustache may produce trailing whitespace from section iteration; today's
@@ -100,9 +104,11 @@ export function buildWizardMessages(
 }
 
 export function buildVerdictSystem(all: readonly Wizard[]): string {
+  // Project the guild into RosterLens rows (fullName + a `last` flag); the
+  // verdict system template joins them with ", " itself via {{^last}}, {{/last}},
+  // so the separator prose lives in the template, not a code-side .join(", ").
   const payload: VerdictSystemPayload = {
-    wizards: [...all],
-    rosterJoined: all.map((p) => fullName(p)).join(", "),
+    roster: all.map((p, i) => ({ fullName: fullName(p), last: i === all.length - 1 })),
   };
   return renderVerdictSystem(payload, templateProvider).trimEnd();
 }

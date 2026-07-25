@@ -7,6 +7,16 @@ export interface Dissent {
   reason: string;
 }
 
+export interface RivalLens {
+  name: string;
+  last: boolean;
+}
+
+export interface RosterLens {
+  fullName: string;
+  last: boolean;
+}
+
 export interface SourceLens {
   title: string;
   url: string;
@@ -37,20 +47,7 @@ export interface VerdictOutput {
 }
 
 export interface VerdictSystemPayload {
-  wizards?: Wizard[] | null;
-  rosterJoined: string;
-}
-
-export interface Wizard {
-  id: string;
-  name: string;
-  title: string;
-  technique: string;
-  bickersWith: string[];
-  usesSearch: boolean;
-  order?: number | null;
-  techniqueBlurb: string;
-  defaultEnabled: boolean;
+  roster: RosterLens[];
 }
 
 export interface VerdictUserPayload {
@@ -68,8 +65,8 @@ export interface WizardOutput {
 }
 
 export interface WizardSystemPayload {
-  rivalNames?: string[] | null;
-  rivalNamesJoined?: string | null;
+  hasRivals: boolean;
+  rivals?: RivalLens[] | null;
   turnNumber: number;
 }
 
@@ -79,6 +76,18 @@ export interface WizardUserPayload {
   hasPrior: boolean;
   sources?: SourceLens[] | null;
   hasSources: boolean;
+}
+
+export interface Wizard {
+  id: string;
+  name: string;
+  title: string;
+  technique: string;
+  bickersWith: string[];
+  usesSearch: boolean;
+  order?: number | null;
+  techniqueBlurb: string;
+  defaultEnabled: boolean;
 }
 
 export interface CouncilFramePayload {

@@ -77,7 +77,7 @@ describe("WIZARD_REGISTRY", () => {
   it("renderSystem produces non-empty text containing the wizard's name", () => {
     const grumbel = WIZARD_REGISTRY.find((e) => e.wizard.id === "grumbel")!;
     const out = grumbel.renderSystem(
-      { rivalNames: ["vexil"], rivalNamesJoined: "vexil", turnNumber: 1 } as never,
+      { hasRivals: true, rivals: [{ name: "vexil", last: true }], turnNumber: 1 } as never,
       templateProvider,
     );
     expect(out.length).toBeGreaterThan(50);

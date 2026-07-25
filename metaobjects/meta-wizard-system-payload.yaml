@@ -1,22 +1,24 @@
 # Payload for a wizard's system prompt. Personality is hardcoded in the .mustache file.
 #
-# rivalNamesJoined is the pre-joined, comma-separated form of rivalNames
-# (e.g. "Ozzimandias, Pib"). Mustache is logic-less and cannot insert a
-# separator between iterated array items; the projection layer joins the
-# list eagerly so the template can drop it in as `{{rivalNamesJoined}}`.
-# Empty when there are no rivals — the template treats it as a section so
-# the whole "You tend to bicker with…" line vanishes.
+# `rivals` is the structured list of rival wizards (name + a `last` flag), each a
+# RivalLens; the system template renders it with its own ", " separator through
+# the shared `wizards/bicker` partial ({{^last}}, {{/last}}), so the comma-joining
+# prose lives IN the template — visible to `meta verify`, not manufactured in a
+# code-side string builder. `hasRivals` gates the whole "You tend to bicker with…"
+# line (it vanishes when a wizard has no rivals).
 metadata:
   package: wizardsofodd
   children:
     - object.value:
         name: WizardSystemPayload
         children:
-          - field.string:
-              name: rivalNames
+          - field.boolean:
+              name: hasRivals
+              required: true
+          - field.object:
+              name: rivals
+              objectRef: RivalLens
               isArray: true
-          - field.string:
-              name: rivalNamesJoined
           - field.int:
               name: turnNumber
               required: true

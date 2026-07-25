@@ -1,0 +1,17 @@
+# RosterLens — one wizard's full display name ("name title") for the Clerk's
+# roster line, plus a `last` flag. As with RivalLens, the verdict system
+# template joins the roster with ", " itself via {{^last}}, {{/last}}, so the
+# separator prose lives in the template (visible to `meta verify`) rather than
+# in a code-side .join(", ") — replaces the old rosterJoined string.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: RosterLens
+        children:
+          - field.string:
+              name: fullName
+              required: true
+          - field.boolean:
+              name: last
+              required: true

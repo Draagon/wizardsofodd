@@ -2,13 +2,15 @@
 // Then import it LOCALLY in metaobjects.config.ts:
 //   import { queriesFile } from "./codegen/generators/queries";
 //
-// use-when:      you want generated typed CRUD finders (find<E>ById, list<E>s, create/update/delete)
-//                over Drizzle. Drop it if you hand-write your data access.
+// use-when:      you want generated typed finders over Drizzle. Drop it if you hand-write
+//                all of your data access.
 // emits:         <target>/<Entity>.queries.ts per write-through entity.
-// customize:     the vanilla CRUD assembly below is OWNED — reorder, drop verbs (e.g. no delete),
-//                change the Db type alias, add your own finders. The render<Verb>Fn primitives emit
-//                each block; call your own instead to change a verb's body.
-// composes-with: entity.ts (imports the table + InsertSchema it emits).
+// customize:     the finder assembly below is OWNED — reorder, add/drop verbs, change the Db
+//                type alias, add your own finders. The render<Verb>Fn primitives emit each
+//                block; call your own instead to change a verb's body. THIS COPY is trimmed to
+//                READ-ONLY finders (a worked example of the "drop verbs" customization): this
+//                app's writes are bespoke, so create/update/delete are dropped — see renderQueries.
+// composes-with: entity.ts (imports the table + row type it emits).
 //
 // NOTE: the advanced TPH-base + projection variants delegate to the engine's composer
 // (`renderQueriesFile`) — they're rarely customized. To own those too, copy their branches
@@ -24,9 +26,6 @@ import {
   entityModuleSpecifier,
   renderFindByIdFn,
   renderListFn,
-  renderCreateFn,
-  renderUpdateFn,
-  renderDeleteByIdFn,
   renderReverseFinderFns,
   reverseFksFor,
   isTphDiscriminatorBase,
@@ -66,24 +65,23 @@ function renderQueries(obj: MetaObject, ctx: RenderContext): string {
       ? `type Db = PgDatabase<PgQueryResultHKT, Record<string, never>>;`
       : `type Db = BaseSQLiteDatabase<"sync" | "async", unknown>;`;
 
-  // FR-035 (shipped in @metaobjectsdev 0.16.0): the live renderUpdateFn now emits a
-  // typed `patch: <Entity>Patch` param and `<Entity>UpdateSchema.parse(patch)`, so the
-  // update fn's import line must pull in both symbols (this owned composer was scaffolded
-  // pre-FR-035 and otherwise wouldn't). Mirrors the engine's current vanilla composer.
+  // READ-ONLY data access: this app's writes are bespoke (hand-rolled inserts/updates in
+  // src/db/queries.ts, over these generated row types) — the same stance as the
+  // deliberately-absent routes generator (see metaobjects.config.ts). So this owned composer
+  // emits only the read surface (findById, list, and the ADR-0038 reverse finders below) and
+  // drops create/update/delete. The read fns need only the table + row type; the write-only
+  // InsertSchema/Patch/UpdateSchema are intentionally not imported.
   const literalImports = code`
 ${dbTypeImport}
 ${dbTypeAlias}
 
-import { ${varName}, type ${entityName}, type ${entityName}Patch, ${entityName}InsertSchema, ${entityName}UpdateSchema } from ${JSON.stringify(entityFileName)};
+import { ${varName}, type ${entityName} } from ${JSON.stringify(entityFileName)};
 `;
 
   const sections: Code[] = [
     literalImports,
     renderFindByIdFn(obj, ctx),
     renderListFn(obj, ctx),
-    renderCreateFn(obj, ctx),
-    renderUpdateFn(obj, ctx),
-    renderDeleteByIdFn(obj, ctx),
   ];
 
   // ADR-0038 — reverse-relationship navigation as explicit FK finders. One

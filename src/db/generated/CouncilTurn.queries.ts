@@ -6,13 +6,7 @@ import { eq, inArray } from "drizzle-orm";
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
 type Db = BaseSQLiteDatabase<"sync" | "async", unknown>;
 
-import {
-  type CouncilTurn,
-  CouncilTurnInsertSchema,
-  type CouncilTurnPatch,
-  councilTurns,
-  CouncilTurnUpdateSchema,
-} from "./CouncilTurn";
+import { type CouncilTurn, councilTurns } from "./CouncilTurn";
 export async function findCouncilTurnById(
   db: Db,
   councilId: string,
@@ -36,47 +30,6 @@ export async function listCouncilTurns(
     q = q.offset(opts.offset);
   }
   return q;
-}
-export async function createCouncilTurn(
-  db: Db,
-  data: unknown,
-): Promise<CouncilTurn> {
-  const validated = CouncilTurnInsertSchema.parse(data);
-  const [councilTurn] = await db
-    .insert(councilTurns)
-    .values(validated)
-    .returning();
-  return councilTurn!;
-}
-export async function updateCouncilTurn(
-  db: Db,
-  councilId: string,
-  patch: CouncilTurnPatch,
-): Promise<CouncilTurn | null> {
-  const validated = CouncilTurnUpdateSchema.parse(patch);
-  // PATCH-5: an empty patch is a no-op — return the current row rather than let
-  // Drizzle throw on an empty SET clause.
-  if (Object.keys(validated).length === 0) {
-    return findCouncilTurnById(db, councilId);
-  }
-  const [councilTurn] = await db
-    .update(councilTurns)
-    .set(validated)
-    .where(eq(councilTurns.councilId, councilId))
-    .returning();
-  return councilTurn ?? null;
-}
-export async function deleteCouncilTurnById(
-  db: Db,
-  councilId: string,
-): Promise<boolean> {
-  // Use .returning() unconditionally — supported on SQLite ≥3.35 (covers D1, libsql/Turso)
-  // and Postgres. Result is an array of deleted rows; presence implies success.
-  const deleted = await db
-    .delete(councilTurns)
-    .where(eq(councilTurns.councilId, councilId))
-    .returning();
-  return deleted.length > 0;
 }
 export async function findCouncilTurnsByCouncil(
   db: Db,

@@ -6,13 +6,7 @@ import { eq } from "drizzle-orm";
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
 type Db = BaseSQLiteDatabase<"sync" | "async", unknown>;
 
-import {
-  type Council,
-  CouncilInsertSchema,
-  type CouncilPatch,
-  councils,
-  CouncilUpdateSchema,
-} from "./Council";
+import { type Council, councils } from "./Council";
 export async function findCouncilById(
   db: Db,
   id: string,
@@ -36,36 +30,4 @@ export async function listCouncils(
     q = q.offset(opts.offset);
   }
   return q;
-}
-export async function createCouncil(db: Db, data: unknown): Promise<Council> {
-  const validated = CouncilInsertSchema.parse(data);
-  const [council] = await db.insert(councils).values(validated).returning();
-  return council!;
-}
-export async function updateCouncil(
-  db: Db,
-  id: string,
-  patch: CouncilPatch,
-): Promise<Council | null> {
-  const validated = CouncilUpdateSchema.parse(patch);
-  // PATCH-5: an empty patch is a no-op — return the current row rather than let
-  // Drizzle throw on an empty SET clause.
-  if (Object.keys(validated).length === 0) {
-    return findCouncilById(db, id);
-  }
-  const [council] = await db
-    .update(councils)
-    .set(validated)
-    .where(eq(councils.id, id))
-    .returning();
-  return council ?? null;
-}
-export async function deleteCouncilById(db: Db, id: string): Promise<boolean> {
-  // Use .returning() unconditionally — supported on SQLite ≥3.35 (covers D1, libsql/Turso)
-  // and Postgres. Result is an array of deleted rows; presence implies success.
-  const deleted = await db
-    .delete(councils)
-    .where(eq(councils.id, id))
-    .returning();
-  return deleted.length > 0;
 }

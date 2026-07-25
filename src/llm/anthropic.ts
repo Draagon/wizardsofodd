@@ -1,6 +1,32 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
+/**
+ * The model's response could not be turned into a valid tool call — either no
+ * `tool_use` block came back, or its input failed schema validation. Retrying
+ * WITH a corrective reminder can plausibly fix this, so the generated wrappers
+ * do exactly that (and only for this error).
+ */
+export class MalformedToolCallError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MalformedToolCallError";
+  }
+}
+
+/**
+ * The Anthropic API call itself failed — an HTTP error (rate limit, overload,
+ * server error). A "your last response wasn't a valid tool call" reminder can't
+ * fix this, so callers must NOT retry it as if the model misbehaved and must
+ * NEVER fabricate a structured result (e.g. a canned verdict) from it.
+ */
+export class AnthropicTransportError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = "AnthropicTransportError";
+  }
+}
+
 export interface AnthropicMessage {
   role: "user" | "assistant";
   content: string;
@@ -48,7 +74,7 @@ export async function complete(params: CompleteParams): Promise<string> {
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    throw new Error(`Anthropic API error ${res.status} ${res.statusText}: ${detail.slice(0, 200)}`);
+    throw new AnthropicTransportError(`Anthropic API error ${res.status} ${res.statusText}: ${detail.slice(0, 200)}`, res.status);
   }
 
   const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
@@ -93,17 +119,17 @@ export async function completeStructured<T>(params: CompleteStructuredParams<T>)
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    throw new Error(`Anthropic API error ${res.status} ${res.statusText}: ${detail.slice(0, 200)}`);
+    throw new AnthropicTransportError(`Anthropic API error ${res.status} ${res.statusText}: ${detail.slice(0, 200)}`, res.status);
   }
 
   const data = (await res.json()) as { content?: Array<{ type: string; name?: string; input?: unknown }> };
   const toolUse = (data.content ?? []).find((b) => b.type === "tool_use" && b.name === params.toolName);
   if (!toolUse) {
-    throw new Error(`completeStructured: no tool_use block named "${params.toolName}" in response`);
+    throw new MalformedToolCallError(`completeStructured: no tool_use block named "${params.toolName}" in response`);
   }
   const parsed = params.toolSchema.safeParse(toolUse.input);
   if (!parsed.success) {
-    throw new Error(`completeStructured: validation failed: ${parsed.error.message.slice(0, 200)}`);
+    throw new MalformedToolCallError(`completeStructured: validation failed: ${parsed.error.message.slice(0, 200)}`);
   }
   return parsed.data;
 }

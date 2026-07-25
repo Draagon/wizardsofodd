@@ -156,8 +156,30 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
 
   const vSys = buildVerdictSystem(all);
   const vMsgs = buildVerdictMessages(question, prior);
-  const verdict = await callEmitVerdict(toolcallParams(params, vSys, vMsgs));
-  yield { type: "verdict", verdict };
+  try {
+    const verdict = await callEmitVerdict(toolcallParams(params, vSys, vMsgs));
+    yield { type: "verdict", verdict };
+  } catch {
+    // A malformed verdict is absorbed by emitVerdict's canned fallback inside
+    // the wrapper, so anything reaching here is a transport/API failure (rate
+    // limit, overload). Surface that honestly instead of crashing the SSE
+    // stream — and worded distinctly from the fallback's "could not converge"
+    // deliberation outcome, since the wizards' takes above are still valid.
+    yield {
+      type: "verdict",
+      verdict: {
+        stance: "unanswerable",
+        confidence: 0,
+        takeMarkdown:
+          "The wizards' takes are above, but the Guild hit a temporary problem before it could synthesize a verdict. Please try again in a moment.",
+        dissents: [],
+        evidenceQuality: "none",
+        agreements: [],
+        splits: [],
+        verifyNote: "",
+      },
+    };
+  }
 }
 
 // Follow-up rounds (clarify) were removed with the follow-up feature; convene

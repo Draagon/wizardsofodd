@@ -42,11 +42,13 @@ interface SeenCall {
 
 /**
  * Build a fetchImpl that returns canned tool_use responses and records every
- * call. The caller decides per-call whether to return TAKE, VERDICT, or to
- * fail (status 500) — supports the "wizard 2 throws" scenario.
+ * call. The caller decides per-call: "ok" (return the canned TAKE/VERDICT),
+ * "fail" (a malformed 200 with no tool_use → MalformedToolCallError, the error
+ * that earns the one reminder-retry), or "transport" (status 500 →
+ * AnthropicTransportError, which is NOT retried and NOT turned into a fallback).
  */
 function mkFetch(opts: {
-  onCall?: (n: number, body: any) => "ok" | "fail";
+  onCall?: (n: number, body: any) => "ok" | "fail" | "transport";
   takeFor?: (wizardIdx: number) => WizardOutput;
   capture?: SeenCall[];
 } = {}): typeof fetch {
@@ -62,8 +64,17 @@ function mkFetch(opts: {
     const userContent: string = body.messages[0]?.content ?? "";
     opts.capture?.push({ toolName, systemRaw, systemText, userContent });
     const decision = opts.onCall?.(n, body) ?? "ok";
-    if (decision === "fail") {
+    if (decision === "transport") {
+      // Transport/API failure (rate limit, overload) → AnthropicTransportError.
       return new Response("nope", { status: 500 });
+    }
+    if (decision === "fail") {
+      // Malformed response: a 200 with no tool_use block → MalformedToolCallError,
+      // the error that earns the one reminder-retry.
+      return new Response(JSON.stringify({ content: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
     }
     if (toolName === "emit_wizard_take") {
       // Count wizards seen so far (one tool call per wizard, in order).
@@ -254,6 +265,43 @@ describe("convene verdict fallback", () => {
     }
     // The Clerk (emit_verdict) was never called — no take-list to synthesize.
     expect(seen.some((c) => c.toolName === "emit_verdict")).toBe(false);
+  });
+});
+
+describe("convene transport errors (not retried, not fabricated)", () => {
+  it("surfaces a wizard transport failure as an error event, without a retry", async () => {
+    // Wizard 2's first call hits a transport error (500). A reminder can't fix a
+    // rate limit, so it must NOT be retried — the failure consumes ONE call,
+    // wizard 3 runs on the next call, and 9 wizards still answer.
+    const seen: SeenCall[] = [];
+    const fetchImpl = mkFetch({ onCall: (n) => (n === 2 ? "transport" : "ok"), capture: seen });
+    const events: CouncilEvent[] = [];
+    for await (const ev of convene({ question: "q", apiKey: "x", fetchImpl })) {
+      events.push(ev);
+    }
+    expect(events.some((e) => e.type === "error")).toBe(true);
+    expect(events.filter((e) => e.type === "wizard")).toHaveLength(9);
+    // 10 wizard-take calls (no extra retry call for the failed one), then the verdict.
+    expect(seen.filter((c) => c.toolName === "emit_wizard_take")).toHaveLength(10);
+    expect(events[events.length - 1].type).toBe("verdict");
+  });
+
+  it("emits an honest 'temporary problem' verdict — NOT the canned fallback — on a verdict transport error", async () => {
+    // 10 wizards succeed (calls 1-10); the verdict call (11) hits a transport
+    // error. The canned fallback is only for a MALFORMED double-failure, so this
+    // propagates and the orchestrator surfaces an honest, distinct message
+    // instead of crashing the stream or faking a deliberation outcome.
+    const fetchImpl = mkFetch({ onCall: (n) => (n === 11 ? "transport" : "ok") });
+    const events: CouncilEvent[] = [];
+    for await (const ev of convene({ question: "q", apiKey: "x", fetchImpl })) {
+      events.push(ev);
+    }
+    const last = events[events.length - 1];
+    expect(last.type).toBe("verdict");
+    if (last.type === "verdict") {
+      expect(last.verdict.takeMarkdown).toMatch(/temporary problem/i);
+      expect(last.verdict.takeMarkdown).not.toMatch(/could not reach a decision/i);
+    }
   });
 });
 

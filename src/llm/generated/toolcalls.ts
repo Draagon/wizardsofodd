@@ -3,12 +3,15 @@
 // Source of truth: every template.toolcall node under metaobjects/.
 //
 // Each callEmit<Name>(params) wrapper calls completeStructured with the
-// configured tool name + payload schema. On a malformed first response the
+// configured tool name + payload schema. On a MALFORMED first response the
 // wrapper retries ONCE with a stricter reminder appended to the system
-// prompt. If the YAML declares a `fallback`, double-failure returns the
-// canned payload; otherwise it rethrows.
+// prompt. If the YAML declares a `fallback`, malformed double-failure returns
+// the canned payload; otherwise it rethrows. Transport/API errors (rate limit,
+// overload, server error) are NOT retried and NOT turned into a fallback —
+// they propagate, so the caller can surface an honest failure instead of a
+// fabricated result.
 
-import { completeStructured, type AnthropicMessage, type SystemBlock } from "../anthropic";
+import { completeStructured, MalformedToolCallError, type AnthropicMessage, type SystemBlock } from "../anthropic";
 import { VerdictOutputInsertSchema, type VerdictOutput } from "../../db/generated/VerdictOutput";
 import { WizardOutputInsertSchema, type WizardOutput } from "../../db/generated/WizardOutput";
 
@@ -67,7 +70,11 @@ export async function callEmitVerdict(p: ToolcallParams): Promise<VerdictOutput>
       toolSchema: VerdictOutputInsertSchema,
       ...optional,
     });
-  } catch {
+  } catch (err) {
+    // Only a MALFORMED model response earns a reminder-retry. Transport errors
+    // (rate limit, overload, server error) propagate — they are never retried
+    // as if the model misbehaved, and never fabricated into the canned fallback.
+    if (!(err instanceof MalformedToolCallError)) throw err;
     try {
       return await completeStructured<VerdictOutput>({
         apiKey: p.apiKey,
@@ -77,7 +84,8 @@ export async function callEmitVerdict(p: ToolcallParams): Promise<VerdictOutput>
         toolSchema: VerdictOutputInsertSchema,
         ...optional,
       });
-    } catch {
+    } catch (retryErr) {
+      if (!(retryErr instanceof MalformedToolCallError)) throw retryErr;
       return EMIT_VERDICT_FALLBACK;
     }
   }
@@ -97,7 +105,9 @@ export async function callEmitWizardTake(p: ToolcallParams): Promise<WizardOutpu
       toolSchema: WizardOutputInsertSchema,
       ...optional,
     });
-  } catch {
+  } catch (err) {
+    // Reminder-retry only on a malformed response; transport errors propagate.
+    if (!(err instanceof MalformedToolCallError)) throw err;
       return await completeStructured<WizardOutput>({
         apiKey: p.apiKey,
         system: withReminder(p.system, EMIT_WIZARD_TAKE_REMINDER),

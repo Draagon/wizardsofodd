@@ -9,7 +9,9 @@ type Db = BaseSQLiteDatabase<"sync" | "async", unknown>;
 import {
   type CouncilTurn,
   CouncilTurnInsertSchema,
+  type CouncilTurnPatch,
   councilTurns,
+  CouncilTurnUpdateSchema,
 } from "./CouncilTurn";
 export async function findCouncilTurnById(
   db: Db,
@@ -49,9 +51,14 @@ export async function createCouncilTurn(
 export async function updateCouncilTurn(
   db: Db,
   councilId: string,
-  data: unknown,
+  patch: CouncilTurnPatch,
 ): Promise<CouncilTurn | null> {
-  const validated = CouncilTurnInsertSchema.partial().parse(data);
+  const validated = CouncilTurnUpdateSchema.parse(patch);
+  // PATCH-5: an empty patch is a no-op — return the current row rather than let
+  // Drizzle throw on an empty SET clause.
+  if (Object.keys(validated).length === 0) {
+    return findCouncilTurnById(db, councilId);
+  }
   const [councilTurn] = await db
     .update(councilTurns)
     .set(validated)

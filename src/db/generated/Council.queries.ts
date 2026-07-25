@@ -6,7 +6,13 @@ import { eq } from "drizzle-orm";
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
 type Db = BaseSQLiteDatabase<"sync" | "async", unknown>;
 
-import { type Council, CouncilInsertSchema, councils } from "./Council";
+import {
+  type Council,
+  CouncilInsertSchema,
+  type CouncilPatch,
+  councils,
+  CouncilUpdateSchema,
+} from "./Council";
 export async function findCouncilById(
   db: Db,
   id: string,
@@ -39,9 +45,14 @@ export async function createCouncil(db: Db, data: unknown): Promise<Council> {
 export async function updateCouncil(
   db: Db,
   id: string,
-  data: unknown,
+  patch: CouncilPatch,
 ): Promise<Council | null> {
-  const validated = CouncilInsertSchema.partial().parse(data);
+  const validated = CouncilUpdateSchema.parse(patch);
+  // PATCH-5: an empty patch is a no-op — return the current row rather than let
+  // Drizzle throw on an empty SET clause.
+  if (Object.keys(validated).length === 0) {
+    return findCouncilById(db, id);
+  }
   const [council] = await db
     .update(councils)
     .set(validated)

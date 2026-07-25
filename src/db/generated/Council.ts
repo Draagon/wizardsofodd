@@ -69,7 +69,7 @@ export const CouncilInsertSchema = z.object({
     .max(8)
     .regex(
       new RegExp(
-        "^[abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$",
+        "^(?:^[abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$)$",
       ),
     ),
   visitorId: z.string().min(1).max(64),
@@ -94,24 +94,28 @@ export const CouncilUpdateSchema = z.object({
     .max(8)
     .regex(
       new RegExp(
-        "^[abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$",
+        "^(?:^[abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$)$",
       ),
     )
     .optional(),
   visitorId: z.string().min(1).max(64).optional(),
   question: z.string().min(1).optional(),
   status: z.enum(["pending", "partial", "complete", "error"]).optional(),
-  verdictStance: GuildVerdictEnum.optional(),
-  verdictConfidence: z.number().optional(),
-  verdictMarkdown: z.string().optional(),
-  verdictEvidenceQuality: EvidenceGradeEnum.optional(),
-  dissents: z.array(DissentInsertSchema).optional(),
-  verdictAgreements: z.array(z.string()).optional(),
-  verdictSplits: z.array(z.string()).optional(),
-  verdictVerifyNote: z.string().optional(),
+  verdictStance: GuildVerdictEnum.optional().nullable(),
+  verdictConfidence: z.number().optional().nullable(),
+  verdictMarkdown: z.string().optional().nullable(),
+  verdictEvidenceQuality: EvidenceGradeEnum.optional().nullable(),
+  dissents: z.array(DissentInsertSchema).optional().nullable(),
+  verdictAgreements: z.array(z.string()).optional().nullable(),
+  verdictSplits: z.array(z.string()).optional().nullable(),
+  verdictVerifyNote: z.string().optional().nullable(),
   createdAt: z.number().int().optional(),
-  completedAt: z.number().int().optional(),
+  completedAt: z.number().int().optional().nullable(),
 });
+
+/** Typed patch shape for Council: every settable field, optional (FR-035 PATCH). A
+ * renamed/dropped field is a compile error at every `updateCouncil` call site. */
+export type CouncilPatch = z.input<typeof CouncilUpdateSchema>;
 /**
  * Metadata constants for Council.
  *

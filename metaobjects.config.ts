@@ -51,6 +51,12 @@ export default defineConfig({
   // contract explicit for anyone who later adds one.
   importBase: "../../db/generated",
   dialect: "sqlite",
+  // Pin extensionless relative imports. This project compiles under `moduleResolution:
+  // "Bundler"` (see tsconfig.json) + a Vite/Worker bundler, where extensionless resolves
+  // fine — and the owned generators + existing tree already emit that style. Pinning it
+  // keeps the 0.20 default flip (none → "js", aimed at stock nodenext) from churning
+  // every generated import; the upgrade diff stays limited to the real behavior changes.
+  extStyle: "none",
   providers: [wizardsofoddProvider],
   // Per-target output dirs: each generator writes next to the runtime concern it
   // serves (render handles → render/, roster → personas/, tool wrappers → llm/,

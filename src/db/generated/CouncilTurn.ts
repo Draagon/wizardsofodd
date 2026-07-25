@@ -93,8 +93,12 @@ export const CouncilTurnUpdateSchema = z.object({
   oneLineSummary: z.string().min(1).optional(),
   confidence: z.number().optional(),
   keyClaims: z.array(z.string()).optional(),
-  citations: z.array(SourceLensInsertSchema).optional(),
+  citations: z.array(SourceLensInsertSchema).optional().nullable(),
 });
+
+/** Typed patch shape for CouncilTurn: every settable field, optional (FR-035 PATCH). A
+ * renamed/dropped field is a compile error at every `updateCouncilTurn` call site. */
+export type CouncilTurnPatch = z.input<typeof CouncilTurnUpdateSchema>;
 /**
  * Metadata constants for CouncilTurn.
  *

@@ -66,11 +66,15 @@ function renderQueries(obj: MetaObject, ctx: RenderContext): string {
       ? `type Db = PgDatabase<PgQueryResultHKT, Record<string, never>>;`
       : `type Db = BaseSQLiteDatabase<"sync" | "async", unknown>;`;
 
+  // FR-035 (shipped in @metaobjectsdev 0.16.0): the live renderUpdateFn now emits a
+  // typed `patch: <Entity>Patch` param and `<Entity>UpdateSchema.parse(patch)`, so the
+  // update fn's import line must pull in both symbols (this owned composer was scaffolded
+  // pre-FR-035 and otherwise wouldn't). Mirrors the engine's current vanilla composer.
   const literalImports = code`
 ${dbTypeImport}
 ${dbTypeAlias}
 
-import { ${varName}, type ${entityName}, ${entityName}InsertSchema } from ${JSON.stringify(entityFileName)};
+import { ${varName}, type ${entityName}, type ${entityName}Patch, ${entityName}InsertSchema, ${entityName}UpdateSchema } from ${JSON.stringify(entityFileName)};
 `;
 
   const sections: Code[] = [

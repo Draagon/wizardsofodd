@@ -36,27 +36,27 @@ metadata:
               name: stance
               extends: wizardStance
               required: true
+          # The take-core is the persisted form of WizardOutput — single-source the
+          # shape from the owner; keyClaims/citations keep the entity's physical
+          # column names + jsonb storage as overrides on top of the inherited shape.
           - field.string:
               name: takeMarkdown
-              required: true
+              extends: WizardOutput.takeMarkdown
           - field.string:
               name: oneLineSummary
-              required: true
+              extends: WizardOutput.oneLineSummary
           - field.float:
               name: confidence
-              required: true
+              extends: WizardOutput.confidence
           - field.string:
               name: keyClaims
+              extends: WizardOutput.keyClaims
               column: key_claims_json
-              isArray: true
-              required: true
           - field.object:
               name: citations
+              extends: WizardOutput.citations
               column: citations_json
-              objectRef: SourceLens
-              isArray: true
-              storage: jsonb   # explicit on the persisted column (the default; stated for clarity)
-              required: false
+              storage: jsonb
           - identity.primary:
               fields: [councilId, ordinal]
           - identity.reference:

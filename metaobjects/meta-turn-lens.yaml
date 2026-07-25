@@ -18,12 +18,14 @@ metadata:
               name: stance
               extends: wizardStance
               required: true
+          # The take-core is a projection of WizardOutput — single-source its shape
+          # (oneLineSummary's 140 cap, confidence's 0–1 validator) from the owner.
           - field.string:
               name: takeMarkdown
-              required: true
+              extends: WizardOutput.takeMarkdown
           - field.string:
               name: oneLineSummary
-              required: true
+              extends: WizardOutput.oneLineSummary
           - field.float:
               name: confidence
-              required: true
+              extends: WizardOutput.confidence

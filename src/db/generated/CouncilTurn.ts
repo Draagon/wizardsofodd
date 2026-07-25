@@ -75,8 +75,8 @@ export const CouncilTurnInsertSchema = z.object({
   kind: z.enum(["wizard", "error"]),
   stance: WizardStanceEnum,
   takeMarkdown: z.string().min(1),
-  oneLineSummary: z.string().min(1),
-  confidence: z.number(),
+  oneLineSummary: z.string().min(1).max(140),
+  confidence: z.number().min(0).max(1),
   keyClaims: z.array(z.string()),
   citations: z.array(SourceLensInsertSchema).optional(),
 });
@@ -90,8 +90,8 @@ export const CouncilTurnUpdateSchema = z.object({
   kind: z.enum(["wizard", "error"]).optional(),
   stance: WizardStanceEnum.optional(),
   takeMarkdown: z.string().min(1).optional(),
-  oneLineSummary: z.string().min(1).optional(),
-  confidence: z.number().optional(),
+  oneLineSummary: z.string().min(1).max(140).optional(),
+  confidence: z.number().min(0).max(1).optional(),
   keyClaims: z.array(z.string()).optional(),
   citations: z.array(SourceLensInsertSchema).optional().nullable(),
 });
@@ -188,7 +188,10 @@ export const CouncilTurn = {
     label: "One Line Summary",
     view: "text",
     htmlType: "text",
-    rules: { required: "One Line Summary is required" },
+    rules: {
+      required: "One Line Summary is required",
+      maxLength: { value: 140, message: "Must be 140 characters or fewer" },
+    },
   },
   confidence: {
     name: "confidence",

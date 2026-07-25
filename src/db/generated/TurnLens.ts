@@ -18,6 +18,6 @@ export const TurnLensInsertSchema = z.object({
   wizardName: z.string().min(1).max(128),
   stance: WizardStanceEnum,
   takeMarkdown: z.string().min(1),
-  oneLineSummary: z.string().min(1),
-  confidence: z.number(),
+  oneLineSummary: z.string().min(1).max(140),
+  confidence: z.number().min(0).max(1),
 });

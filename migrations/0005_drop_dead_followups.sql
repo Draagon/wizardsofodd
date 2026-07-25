@@ -1,0 +1,11 @@
+-- Drop the dead council_followups table.
+--
+-- The follow-up-rounds feature was cut (commit 6fa5567). This table is modeled by
+-- no metadata and referenced by no code (grep-confirmed: its only mention was the
+-- CREATE in 0004). Remote prod held 1 row of cut-feature demo data — a round-1
+-- "Why, though?" test follow-up from 2026-05-31 with no verdict — accepted loss.
+--
+-- Contrast the vestigial council_turns.round COLUMN, which is KEPT (see
+-- meta-council-turn.yaml): dropping a column forces a SQLite 12-step table rewrite,
+-- so it stays and is modeled `deprecated: true`. A dead TABLE has no such cost.
+DROP TABLE council_followups;

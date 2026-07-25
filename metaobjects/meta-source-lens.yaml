@@ -9,6 +9,13 @@ metadata:
           - field.string:
               name: title
               required: true
+          # Deliberately field.string, NOT field.uri: this URL comes from an LLM / web
+          # search and rides inside a wizard's structured tool-call output. field.uri
+          # generates z.string().url(), so one malformed citation URL would fail-validate
+          # the ENTIRE take (a whole wizard turn lost to one bad link). Resilience over
+          # strictness for model-sourced URLs. Revisit once metaobjects ships a lenient
+          # field.uri (a @lenient attr that keeps the URL type but drops the well-formedness
+          # assertion) — tracked as a product follow-up.
           - field.string:
               name: url
               required: true

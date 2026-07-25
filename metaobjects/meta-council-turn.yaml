@@ -18,9 +18,11 @@ metadata:
           # VESTIGIAL: the follow-up-rounds feature was removed (commit 6fa5567).
           # This column is kept rather than dropped because D1 migrations are
           # append-only and dropping it would force a table rewrite; every turn
-          # now records round 0. The metadata + code no longer pretend rounds exist.
+          # now records round 0. Marked deprecated so tooling (not just a comment)
+          # sees it as dead.
           - field.int:
               name: round
+              deprecated: true
               required: true
           - field.string:
               name: wizardId

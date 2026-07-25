@@ -1,0 +1,27 @@
+{{! Shared wizard user-prompt body. Every wizard's *-user.mustache includes this
+    partial and is otherwise identical — per-wizard variation lives entirely in the
+    system prompt. The per-wizard files are kept as a binding seam so a later phase
+    can give one wizard a unique output-shape demand at the user boundary without
+    restructuring; if that day comes, inline this body there and diverge. }}
+A visitor asks the Guild: "{{question}}"
+
+{{#hasPrior}}
+Wizards who have already spoken:
+{{#prior}}
+- **{{wizardName}}** ({{stance}}): {{takeMarkdown}}
+{{/prior}}
+
+Now give your own answer, in character. React to the others if it suits you.
+{{/hasPrior}}
+{{^hasPrior}}
+You are the first to speak. Give your answer, in character.
+{{/hasPrior}}
+{{#hasSources}}
+
+## Sources from a live search of the question:
+{{#sources}}
+- **{{title}}** — {{url}}
+{{#snippet}}  {{snippet}}
+{{/snippet}}
+{{/sources}}
+{{/hasSources}}

@@ -1,0 +1,18 @@
+-- Reverse of 0006_reconcile-schema.sql.
+--
+-- 0006 is a SQLite recreate-and-copy: it adds the named CHECK constraints that the
+-- metadata's field.enum / validator.numeric imply (council_turns_kind_chk,
+-- council_turns_confidence_numeric_chk, councils_status_chk — plus named forms of the
+-- stance/verdict checks that migrations 0002/0004 created anonymously), gives the
+-- council_turns→councils FK `ON UPDATE CASCADE` (the metamodel default for a
+-- relationship.composition), and drops the vestigial `DEFAULT ''` on take_markdown /
+-- one_line_summary. It preserves ALL row data (INSERT … SELECT).
+--
+-- A faithful reverse is itself a full recreate-and-copy back to the pre-0006 shape
+-- (the accreted 0001+0002+0003+0004 form: anonymous stance/verdict checks, no
+-- kind/status/confidence check, FK ON DELETE only, the empty-string defaults restored).
+-- Because the forward migration drops no data and D1 migrations are applied append-only
+-- in practice, that reverse is left as a documented MANUAL recreate rather than
+-- auto-generated best-effort SQL — matching how `meta migrate` emits SQLite down
+-- migrations. Reconstruct the pre-0006 CREATE TABLEs from migrations 0001–0004 if a
+-- rollback is ever genuinely required.

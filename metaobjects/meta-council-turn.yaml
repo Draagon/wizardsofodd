@@ -20,10 +20,16 @@ metadata:
           # append-only and dropping it would force a table rewrite; every turn
           # now records round 0. Marked deprecated so tooling (not just a comment)
           # sees it as dead.
+          # `default:` on the columns below mirrors the DB defaults added by
+          # migration 0002 (structured outputs) / 0004 — the NOT NULL + DEFAULT
+          # contract that let those columns be ALTER-ADDed onto existing rows. The
+          # app always supplies a value; declaring the defaults here keeps the
+          # metadata honest against the live D1 schema (meta verify --dialect d1).
           - field.int:
               name: round
               deprecated: true
               required: true
+              default: 0
           - field.string:
               name: wizardId
               extends: Wizard.id
@@ -38,9 +44,15 @@ metadata:
               name: stance
               extends: wizardStance
               required: true
+              default: abstains
           # The take-core is the persisted form of WizardOutput — single-source the
           # shape from the owner; keyClaims/citations keep the entity's physical
           # column names + jsonb storage as overrides on top of the inherited shape.
+          # takeMarkdown / oneLineSummary carry NO `default:` — the migrations gave them
+          # a vestigial `DEFAULT ''` (an empty-string default is meaningless for prose;
+          # the app always supplies a value), so the rebuild migration drops it rather
+          # than the metadata declaring cruft. (The non-empty defaults above/below are
+          # kept — they mirror a real NOT NULL + DEFAULT contract.)
           - field.string:
               name: takeMarkdown
               extends: WizardOutput.takeMarkdown
@@ -50,10 +62,12 @@ metadata:
           - field.float:
               name: confidence
               extends: WizardOutput.confidence
+              default: 0
           - field.string:
               name: keyClaims
               extends: WizardOutput.keyClaims
               column: key_claims_json
+              default: "[]"
           - field.object:
               name: citations
               extends: WizardOutput.citations

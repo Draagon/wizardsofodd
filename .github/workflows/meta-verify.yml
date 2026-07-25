@@ -38,6 +38,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run demo:drift # metadata / prompt / codegen drift gate
+      - run: npm run verify:db # D1 SCHEMA drift gate — apply migrations to a fresh local
+        # D1 (miniflare; no Cloudflare auth) then `meta verify --dialect d1`. Catches a
+        # migration that drifts from the metadata (a missing CHECK, a stale column) the
+        # way demo:drift catches codegen drift. predeploy adds the --remote counterpart.
       - run: npx tsc -b # typecheck generated + hand-written code
       - run: npm run build:web # production build compiles
       - run: npm test # full vitest suite (no secrets required)

@@ -28,7 +28,7 @@ export const councilTurns = sqliteTable(
     /**
      * @deprecated true
      */
-    round: integer("round").notNull(),
+    round: integer("round").notNull().default(0),
     wizardId: text("wizard_id").notNull(),
     wizardName: text("wizard_name").notNull(),
     kind: text("kind", { enum: ["wizard", "error"] as const }).notNull(),
@@ -40,13 +40,16 @@ export const councilTurns = sqliteTable(
         "reframes",
         "abstains",
       ] as const,
-    }).notNull(),
+    })
+      .notNull()
+      .default("abstains"),
     takeMarkdown: text("take_markdown").notNull(),
     oneLineSummary: text("one_line_summary").notNull(),
-    confidence: real("confidence").notNull(),
+    confidence: real("confidence").notNull().default(0),
     keyClaims: text("key_claims_json", { mode: "json" })
       .$type<string[]>()
-      .notNull(),
+      .notNull()
+      .default([]),
     citations: text("citations_json", { mode: "json" }).$type<SourceLens[]>(),
   },
   (table) => [
@@ -72,15 +75,15 @@ export { type WizardStance } from "./enums";
 export const CouncilTurnInsertSchema = z.object({
   councilId: z.string().min(1).max(16),
   ordinal: z.number().int(),
-  round: z.number().int(),
+  round: z.number().int().optional(),
   wizardId: z.string().min(1).max(32),
   wizardName: z.string().min(1).max(128),
   kind: z.enum(["wizard", "error"]),
-  stance: WizardStanceEnum,
+  stance: WizardStanceEnum.optional(),
   takeMarkdown: z.string().min(1),
   oneLineSummary: z.string().min(1).max(140),
-  confidence: z.number().min(0).max(1),
-  keyClaims: z.array(z.string()),
+  confidence: z.number().min(0).max(1).optional(),
+  keyClaims: z.array(z.string()).optional(),
   citations: z.array(SourceLensInsertSchema).optional(),
 });
 

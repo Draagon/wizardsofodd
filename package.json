@@ -24,11 +24,11 @@
     "demo:drift": "meta verify --templates --codegen --prompts data/templates"
   },
   "dependencies": {
-    "@metaobjectsdev/cli": "^0.15.18",
-    "@metaobjectsdev/codegen-ts": "^0.15.18",
-    "@metaobjectsdev/render": "^0.15.18",
-    "@metaobjectsdev/runtime-ts": "^0.15.18",
-    "@metaobjectsdev/sdk": "^0.15.18",
+    "@metaobjectsdev/cli": "^0.20.1",
+    "@metaobjectsdev/codegen-ts": "^0.20.1",
+    "@metaobjectsdev/render": "^0.20.1",
+    "@metaobjectsdev/runtime-ts": "^0.20.1",
+    "@metaobjectsdev/sdk": "^0.20.1",
     "drizzle-orm": "^0.45.2",
     "drizzle-zod": "^0.5.1",
     "hono": "^4.12.29",
@@ -41,7 +41,7 @@
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.16.20",
     "@cloudflare/workers-types": "^4.20241127.0",
-    "@metaobjectsdev/metadata": "^0.15.18",
+    "@metaobjectsdev/metadata": "^0.20.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^26.1.1",
     "@types/react": "^18.3.29",

@@ -25,6 +25,9 @@ export const councilTurns = sqliteTable(
   {
     councilId: text("council_id").notNull(),
     ordinal: integer("ordinal").notNull(),
+    /**
+     * @deprecated true
+     */
     round: integer("round").notNull(),
     wizardId: text("wizard_id").notNull(),
     wizardName: text("wizard_name").notNull(),

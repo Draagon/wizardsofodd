@@ -8,6 +8,6 @@ export interface Dissent {
   reason: string;
 }
 export const DissentInsertSchema = z.object({
-  wizardId: z.string().min(1),
+  wizardId: z.string().min(1).max(32),
   reason: z.string().min(1),
 });

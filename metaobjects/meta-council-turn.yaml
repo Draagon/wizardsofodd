@@ -24,12 +24,10 @@ metadata:
               required: true
           - field.string:
               name: wizardId
-              maxLength: 32
-              required: true
+              extends: Wizard.id
           - field.string:
               name: wizardName
-              maxLength: 128
-              required: true
+              extends: Wizard.name
           - field.enum:
               name: kind
               values: [wizard, error]

@@ -9,10 +9,10 @@ metadata:
         children:
           - field.string:
               name: wizardId
-              required: true
+              extends: Wizard.id
           - field.string:
               name: wizardName
-              required: true
+              extends: Wizard.name
           - field.string:
               name: reason
               required: true

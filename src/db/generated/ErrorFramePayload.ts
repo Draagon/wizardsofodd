@@ -9,7 +9,7 @@ export interface ErrorFramePayload {
   reason: string;
 }
 export const ErrorFramePayloadInsertSchema = z.object({
-  wizardId: z.string().min(1),
-  wizardName: z.string().min(1),
+  wizardId: z.string().min(1).max(32),
+  wizardName: z.string().min(1).max(128),
   reason: z.string().min(1),
 });

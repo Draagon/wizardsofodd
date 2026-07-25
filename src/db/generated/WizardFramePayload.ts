@@ -10,7 +10,7 @@ export interface WizardFramePayload {
   take: WizardOutput;
 }
 export const WizardFramePayloadInsertSchema = z.object({
-  wizardId: z.string().min(1),
-  wizardName: z.string().min(1),
+  wizardId: z.string().min(1).max(32),
+  wizardName: z.string().min(1).max(128),
   take: WizardOutputInsertSchema,
 });

@@ -14,8 +14,8 @@ export interface TurnLens {
 }
 export { type WizardStance } from "./enums";
 export const TurnLensInsertSchema = z.object({
-  wizardId: z.string().min(1),
-  wizardName: z.string().min(1),
+  wizardId: z.string().min(1).max(32),
+  wizardName: z.string().min(1).max(128),
   stance: WizardStanceEnum,
   takeMarkdown: z.string().min(1),
   oneLineSummary: z.string().min(1),

@@ -26,7 +26,7 @@
     "demo:drift": "meta verify --templates --codegen --prompts data/templates"
   },
   "dependencies": {
-    "@metaobjectsdev/cli": "^0.20.9",
+    "@metaobjectsdev/cli": "^0.20.11",
     "@metaobjectsdev/codegen-ts": "^0.20.3",
     "@metaobjectsdev/render": "^0.20.3",
     "@metaobjectsdev/runtime-ts": "^0.20.3",

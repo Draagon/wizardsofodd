@@ -40,3 +40,12 @@ worker-configuration.d.ts
 !/.metaobjects/AGENTS.md
 !/.metaobjects/CLAUDE.md
 !/.metaobjects/.agent-context.json
+# The gen-state MANIFEST is committed on purpose; the snapshot bodies are not.
+# One hash per generated path is what lets `meta gen` tell "this is exactly what I
+# wrote" from "somebody edited this" on a machine that never generated the output —
+# without it a fresh clone or a CI runner refuses to overwrite rather than guess.
+# The directory has to be un-excluded first: git will not descend into an excluded
+# directory, so a negation under it can never apply.
+!/.metaobjects/.gen-state/
+/.metaobjects/.gen-state/*
+!/.metaobjects/.gen-state/.hashes.json

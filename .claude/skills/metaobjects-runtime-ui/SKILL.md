@@ -76,7 +76,7 @@ a field → HTTP 400.
 | `in`, `like` | yes | `in` only | – |
 | `gt`, `gte`, `lt`, `lte` | – | yes | – |
 
-These eight (`eq` `ne` `gt` `gte` `lt` `lte` `in` `like` `isNull`) are the whole
+These nine (`eq` `ne` `gt` `gte` `lt` `lte` `in` `like` `isNull`) are the whole
 closed set — every port implements these and only these.
 
 ### Sort + pagination
@@ -124,6 +124,24 @@ throws on non-2xx (the hooks rely on the throw for error state). Provide it via 
 fetcher-provider at the tree root; every generated hook reads it from context. The
 generated grid and form components, filter-qs serializer, and cell renderers all
 sit on top of this one seam.
+
+## Grids are opt-in per entity
+
+Read/CRUD hooks are generated for **every** entity. Grids are the exception:
+wherever your stack generates them (the TanStack client today), an entity produces
+grid artifacts only when it declares a `layout.dataGrid` child. So wiring the grid
+generator and seeing no grid files is expected metadata, not a broken build — the
+run says so in its `meta gen` warnings. Opt an entity in with:
+
+```jsonc
+{ "layout.dataGrid": { "name": "default", "@columns": ["name", "email"] } }
+```
+
+Generated grid components are fully **controlled** — they need row-count and
+sort/pagination/filter state on top of the column definitions — so pair the columns
+generator with the grid-**hook** generator, which generates that state plumbing
+instead of leaving you to hand-write it. Your client's reference fragment has the
+generator names and a rendered example.
 
 ---
 

@@ -51,12 +51,11 @@ export default defineConfig({
   // contract explicit for anyone who later adds one.
   importBase: "../../db/generated",
   dialect: "sqlite",
-  // Required since 0.20.15 (#194) for any model declaring a source.rdb, even
-  // though nothing here consumes it: this project's OWNED queries generator takes
-  // `db` as an explicit parameter (see src/db/generated/*.queries.ts) and emits no
-  // db-singleton import, and the Worker builds its client per request. Named at the
-  // real client module so the value is honest rather than a placeholder.
-  dbImport: "../client",
+  // No `dbImport`: since 0.24.3 it is demanded at the point of USE — by a generator
+  // that actually emits `import { db } from …`. This project's OWNED queries generator
+  // takes `db` as an explicit parameter (see src/db/generated/*.queries.ts) and the
+  // Worker builds its client per request, so nothing here ever reads it. Earlier
+  // versions demanded it from the model, which is why a placeholder used to sit here.
   // Pin extensionless relative imports. This project compiles under `moduleResolution:
   // "Bundler"` (see tsconfig.json) + a Vite/Worker bundler, where extensionless resolves
   // fine — and the owned generators + existing tree already emit that style. Pinning it

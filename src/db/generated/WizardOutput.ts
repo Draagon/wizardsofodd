@@ -3,7 +3,7 @@
 // Customize via WizardOutput.extra.ts in this directory.
 import { z } from "zod";
 import { SourceLens, SourceLensInsertSchema } from "./SourceLens";
-import { WizardStance, WizardStanceEnum } from "./enums";
+import { type WizardStance, WizardStanceEnum } from "./enums";
 
 export interface WizardOutput {
   stance: WizardStance;

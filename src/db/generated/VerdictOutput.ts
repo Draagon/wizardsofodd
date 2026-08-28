@@ -4,9 +4,9 @@
 import { z } from "zod";
 import { Dissent, DissentInsertSchema } from "./Dissent";
 import {
-  EvidenceGrade,
+  type EvidenceGrade,
   EvidenceGradeEnum,
-  GuildVerdict,
+  type GuildVerdict,
   GuildVerdictEnum,
 } from "./enums";
 

@@ -43,15 +43,15 @@ export const councils = sqliteTable(
   },
   (table) => [
     check(
-      "chk_councils_status",
+      "councils_status_chk",
       sql`status IN ('pending', 'partial', 'complete', 'error')`,
     ),
     check(
-      "chk_councils_verdict_stance",
+      "councils_verdict_stance_chk",
       sql`verdict_stance IN ('yes', 'no', 'it_depends', 'unanswerable')`,
     ),
     check(
-      "chk_councils_verdict_evidence_quality",
+      "councils_verdict_evidence_quality_chk",
       sql`verdict_evidence_quality IN ('strong', 'mixed', 'thin', 'none')`,
     ),
   ],

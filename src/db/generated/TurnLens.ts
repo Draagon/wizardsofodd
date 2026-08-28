@@ -2,7 +2,7 @@
 // Source metadata: TurnLens (TurnLens)
 // Customize via TurnLens.extra.ts in this directory.
 import { z } from "zod";
-import { WizardStance, WizardStanceEnum } from "./enums";
+import { type WizardStance, WizardStanceEnum } from "./enums";
 
 export interface TurnLens {
   wizardId: string;

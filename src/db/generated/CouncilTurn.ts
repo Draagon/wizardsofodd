@@ -54,9 +54,9 @@ export const councilTurns = sqliteTable(
   },
   (table) => [
     primaryKey({ columns: [table.councilId, table.ordinal] }),
-    check("chk_council_turns_kind", sql`kind IN ('wizard', 'error')`),
+    check("council_turns_kind_chk", sql`kind IN ('wizard', 'error')`),
     check(
-      "chk_council_turns_stance",
+      "council_turns_stance_chk",
       sql`stance IN ('supports', 'opposes', 'complicates', 'reframes', 'abstains')`,
     ),
   ],

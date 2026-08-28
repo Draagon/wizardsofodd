@@ -6,14 +6,14 @@ import { SourceLens, SourceLensInsertSchema } from "./SourceLens";
 import { TurnLens, TurnLensInsertSchema } from "./TurnLens";
 
 export interface WizardUserPayload {
-  question: string;
+  visitorQuestion: string;
   prior?: TurnLens[];
   hasPrior: boolean;
   sources?: SourceLens[];
   hasSources: boolean;
 }
 export const WizardUserPayloadInsertSchema = z.object({
-  question: z.string().min(1),
+  visitorQuestion: z.string().min(1),
   prior: z.array(TurnLensInsertSchema).optional(),
   hasPrior: z.boolean(),
   sources: z.array(SourceLensInsertSchema).optional(),

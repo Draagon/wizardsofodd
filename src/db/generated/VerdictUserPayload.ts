@@ -5,10 +5,10 @@ import { z } from "zod";
 import { TurnLens, TurnLensInsertSchema } from "./TurnLens";
 
 export interface VerdictUserPayload {
-  question: string;
+  visitorQuestion: string;
   prior?: TurnLens[];
 }
 export const VerdictUserPayloadInsertSchema = z.object({
-  question: z.string().min(1),
+  visitorQuestion: z.string().min(1),
   prior: z.array(TurnLensInsertSchema).optional(),
 });

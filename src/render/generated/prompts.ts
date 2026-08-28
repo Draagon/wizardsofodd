@@ -51,7 +51,7 @@ export interface VerdictSystemPayload {
 }
 
 export interface VerdictUserPayload {
-  question: string;
+  visitorQuestion: string;
   prior?: TurnLens[] | null;
 }
 
@@ -71,7 +71,7 @@ export interface WizardSystemPayload {
 }
 
 export interface WizardUserPayload {
-  question: string;
+  visitorQuestion: string;
   prior?: TurnLens[] | null;
   hasPrior: boolean;
   sources?: SourceLens[] | null;

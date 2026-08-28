@@ -93,7 +93,7 @@ export function buildWizardMessages(
   // variation is system-side); any renderer produces the same output.
   // Pick the first registry entry by convention.
   const payload: WizardUserPayload = {
-    question,
+    visitorQuestion: question,
     prior: prior.map(toTurnLens),
     hasPrior: prior.length > 0,
     sources: sources.map(toSourceLens),
@@ -116,7 +116,7 @@ export function buildVerdictSystem(all: readonly Wizard[]): string {
 /** `prior` is expected non-empty: the orchestrator calls this only after every wizard has spoken. */
 export function buildVerdictMessages(question: string, prior: PriorTurn[]): AnthropicMessage[] {
   const payload: VerdictUserPayload = {
-    question,
+    visitorQuestion: question,
     prior: prior.map(toTurnLens),
   };
   const content = renderVerdictUser(payload, templateProvider).trimEnd();

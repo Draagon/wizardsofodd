@@ -109,7 +109,7 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
       // SourceLens shapes via the shared boundary helpers (toTurnLens/toSourceLens),
       // so this projection stays in lock-step with the message builders in prompts.ts.
       const userPayload: WizardUserPayload = {
-        question,
+        visitorQuestion: question,
         prior: prior.map(toTurnLens),
         hasPrior: prior.length > 0,
         sources: sources.map(toSourceLens),

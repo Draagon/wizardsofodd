@@ -6,7 +6,7 @@ metadata:
         name: WizardUserPayload
         children:
           - field.string:
-              name: question
+              name: visitorQuestion
               required: true
           - field.object:
               name: prior

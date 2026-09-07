@@ -1,9 +1,11 @@
 {
+  "src/db/generated/Council.names.ts": "779e90f1dfba1b90d7c4d15dece053117a3a9e3ca09783d966c379ec0379e2e8",
   "src/db/generated/Council.queries.ts": "094899bc9c57f32d088ffa21c062cf73856aca92027f0e5e5b9c287b53f1723e",
-  "src/db/generated/Council.ts": "f6d556ee98b89cc603d2b33051860a7003863bb9c7cd91e2e21a112347a2f3ab",
+  "src/db/generated/Council.ts": "7b204a944a0b9996db5aac21b608793439a30bdb7065b6ac081e12022caebc29",
   "src/db/generated/CouncilFramePayload.ts": "9aa5f7667649db3def3a1c605a261b0e004075799bf1ae312fa68ef95a9618fc",
+  "src/db/generated/CouncilTurn.names.ts": "4d508b93e104fb57ed246ac074bd25f9233dcef49c70909bbac83300f6699315",
   "src/db/generated/CouncilTurn.queries.ts": "b66967acfed68e566c71b53593627548c480d707a9ac569a68d3062d7aea409d",
-  "src/db/generated/CouncilTurn.ts": "ebbd0817ff0b5f6f26b588c626747a930b04c24f353f2e6e5ad26bc731e193c6",
+  "src/db/generated/CouncilTurn.ts": "677f694ba70f44ebef1941d38c19b2c7f8d57c5a1d0109835df1fd387cf7ffcf",
   "src/db/generated/Dissent.ts": "fc34c7c1d0f81fd9857f67cd5b04cd0cd30ff27fae5af8ee993fd96e756ca31f",
   "src/db/generated/DoneFramePayload.ts": "d98a167d93113fbc54ffe32029a1b37289c0f726367930985fc0a976efd10917",
   "src/db/generated/ErrorFramePayload.ts": "d9c04a9f08a6790e6bd34938e8d22abdcc3103ddd9c1cc83f8da5b139e3c0a3b",

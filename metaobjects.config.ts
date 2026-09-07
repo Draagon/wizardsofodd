@@ -1,19 +1,27 @@
 import { defineConfig } from "@metaobjectsdev/cli";
 // ADR-0034 scaffold-and-own: entityFile / queriesFile / barrel are OWNED local
 // copies (scaffolded from @metaobjectsdev/codegen-ts/src/reference/*). We import
-// them from ./codegen/generators, not the package — the package's
-// `@metaobjectsdev/codegen-ts/generators` exports for these carry an
-// @deprecated marker. Owning the copy means the generated shape is ours to
-// change and can never drift out from under us on a package bump.
+// them from ./codegen/generators, not the package — 1.0 REMOVED those four
+// (entity/queries/routes/barrel) from `@metaobjectsdev/codegen-ts/generators`
+// entirely; they were @deprecated on 0.24/0.25 and there is no longer an export
+// to fall back to (ADR-0035 A3, 1.0-readiness G2). Owning the copy means the
+// generated shape is ours to change and can never drift out from under us.
 import { entityFile } from "./codegen/generators/entity";
 import { queriesFile } from "./codegen/generators/queries";
 import { barrel } from "./codegen/generators/barrel";
-// promptRender is NOT in the ownable set and is NOT deprecated on the
-// /generators export — the render engine is upstream-owned and importing it
-// from the package is the supported, correct pattern. Don't cargo-cult "own
-// everything": only the entity/queries/routes/barrel generators are ownable
-// (this project owns entity/queries/barrel and uses no routes generator — see below).
-import { promptRender } from "@metaobjectsdev/codegen-ts/generators";
+// The /generators subpath STAYS, and everything still exported from it is
+// supported public API — the removal was scoped by NAME, not by path. Two axes
+// get confused here, so state both:
+//   - ownable?   `meta eject --list` names all nine, INCLUDING `names` and
+//                `routes-hono`. Having an ownable reference copy is not the same
+//                as being removed from the package.
+//   - removed?   only entity / queries / routes / barrel.
+// So `promptRender` (upstream-owned render engine, no ownable copy) and
+// `namesFile` (a stock generator that DOES have an ownable copy, and is still
+// exported) are both correctly imported from the package here. Don't cargo-cult
+// "own everything" — own a copy when you intend to change its emit; this project
+// changed entity/queries/barrel and has no reason to fork the names artifact.
+import { namesFile, promptRender } from "@metaobjectsdev/codegen-ts/generators";
 import { mustacheTemplates } from "./src/codegen/mustache-templates-generator";
 import { wizardData } from "./src/codegen/wizard-data-generator";
 import { wizardRegistry } from "./src/codegen/wizard-registry-generator";
@@ -78,6 +86,15 @@ export default defineConfig({
   generators: [
     entityFile(),
     queriesFile(),
+    // <Entity>Names — the physical table/column names as importable constants, so a
+    // name is spelled ONCE per run and every other reader points at it (1.0 §A1/§A5).
+    // OPT-IN on TypeScript: `generators: [...]` IS the complete suite here, exactly
+    // like the JVM's <generators> — there is no default set to inherit from. `meta init`
+    // scaffolds it, but this project predates that, so it has to be wired by hand.
+    // Nothing in this repo hand-writes SQL (the .sql files under migrations/ are
+    // `meta migrate` OUTPUT), so no consumer changes; it is wired for parity, and so
+    // that anything added later has the constant sitting there instead of a literal.
+    namesFile(),
     barrel(),
     promptRender({ target: "render" }),
     // Custom generators for instance data + project-local subtypes. Each declares

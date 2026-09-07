@@ -17,22 +17,25 @@ import {
 } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 import { councils } from "./Council";
+import { CouncilTurnNames } from "./CouncilTurn.names";
 import { SourceLens, SourceLensInsertSchema } from "./SourceLens";
 import { WizardStanceEnum } from "./enums";
 
 export const councilTurns = sqliteTable(
-  "council_turns",
+  CouncilTurnNames.sources.primary.table,
   {
-    councilId: text("council_id").notNull(),
-    ordinal: integer("ordinal").notNull(),
+    councilId: text(CouncilTurnNames.fields.councilId.column).notNull(),
+    ordinal: integer(CouncilTurnNames.fields.ordinal.column).notNull(),
     /**
      * @deprecated true
      */
-    round: integer("round").notNull().default(0),
-    wizardId: text("wizard_id").notNull(),
-    wizardName: text("wizard_name").notNull(),
-    kind: text("kind", { enum: ["wizard", "error"] as const }).notNull(),
-    stance: text("stance", {
+    round: integer(CouncilTurnNames.fields.round.column).notNull().default(0),
+    wizardId: text(CouncilTurnNames.fields.wizardId.column).notNull(),
+    wizardName: text(CouncilTurnNames.fields.wizardName.column).notNull(),
+    kind: text(CouncilTurnNames.fields.kind.column, {
+      enum: ["wizard", "error"] as const,
+    }).notNull(),
+    stance: text(CouncilTurnNames.fields.stance.column, {
       enum: [
         "supports",
         "opposes",
@@ -43,21 +46,32 @@ export const councilTurns = sqliteTable(
     })
       .notNull()
       .default("abstains"),
-    takeMarkdown: text("take_markdown").notNull(),
-    oneLineSummary: text("one_line_summary").notNull(),
-    confidence: real("confidence").notNull().default(0),
-    keyClaims: text("key_claims_json", { mode: "json" })
+    takeMarkdown: text(CouncilTurnNames.fields.takeMarkdown.column).notNull(),
+    oneLineSummary: text(
+      CouncilTurnNames.fields.oneLineSummary.column,
+    ).notNull(),
+    confidence: real(CouncilTurnNames.fields.confidence.column)
+      .notNull()
+      .default(0),
+    keyClaims: text(CouncilTurnNames.fields.keyClaims.column, { mode: "json" })
       .$type<string[]>()
       .notNull()
       .default([]),
-    citations: text("citations_json", { mode: "json" }).$type<SourceLens[]>(),
+    citations: text(CouncilTurnNames.fields.citations.column, {
+      mode: "json",
+    }).$type<SourceLens[]>(),
   },
   (table) => [
     primaryKey({ columns: [table.councilId, table.ordinal] }),
-    check("council_turns_kind_chk", sql`kind IN ('wizard', 'error')`),
     check(
-      "council_turns_stance_chk",
-      sql`stance IN ('supports', 'opposes', 'complicates', 'reframes', 'abstains')`,
+      `${CouncilTurnNames.sources.primary.table}_${CouncilTurnNames.fields.kind.column}_chk`,
+      sql`${sql.raw(CouncilTurnNames.fields.kind.column)} IN ('wizard', 'error')`,
+    ),
+    check(
+      `${CouncilTurnNames.sources.primary.table}_${CouncilTurnNames.fields.stance.column}_chk`,
+      sql`${sql.raw(
+        CouncilTurnNames.fields.stance.column,
+      )} IN ('supports', 'opposes', 'complicates', 'reframes', 'abstains')`,
     ),
   ],
 );
@@ -130,7 +144,7 @@ export type CouncilTurnPatch = z.input<typeof CouncilTurnUpdateSchema>;
  */
 export const CouncilTurn = {
   $entity: "CouncilTurn",
-  $table: "council_turns",
+  $table: CouncilTurnNames.sources.primary.table,
   $path: "/council_turns",
   councilId: {
     name: "councilId",

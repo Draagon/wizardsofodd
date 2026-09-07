@@ -121,8 +121,16 @@ export type CouncilPatch = z.input<typeof CouncilUpdateSchema>;
  *
  * Use these instead of magic strings so TS catches typos and refactors stay
  * coherent. Each non-dollar-prefixed key is a per-field object carrying
- * name, label, view, optional htmlType/placeholder/helpText, and the
+ * name, label, view, an htmlType where the field's view maps to one, and the
  * RHF-shaped validation rules derived from the field's validator children.
+ *
+ * placeholder and helpText are NOT emitted — no provider registers an attribute
+ * for them, so nothing here could derive one. (htmlType is emitted, but derived
+ * from the view subtype; the @htmlType override was removed for the same reason.)
+ * useEntityForm still honours placeholder if you add it: this file is generated,
+ * hand edits inside it survive regeneration through the three-way merge, and the
+ * consumers read this const rather than the metadata. That is the intended way
+ * to set it.
  *
  * Typical usage with the metaobjects React form helper:
  *
@@ -134,7 +142,6 @@ export const Council = {
   $entity: "Council",
   $table: "councils",
   $path: "/councils",
-  $apiPrefix: "",
   id: {
     name: "id",
     label: "Id",
@@ -170,15 +177,13 @@ export const Council = {
   status: {
     name: "status",
     label: "Status",
-    view: "text",
-    htmlType: "text",
+    view: "dropdown",
     rules: { required: "Status is required" },
   },
   verdictStance: {
     name: "verdictStance",
     label: "Verdict Stance",
-    view: "text",
-    htmlType: "text",
+    view: "dropdown",
   },
   verdictConfidence: {
     name: "verdictConfidence",
@@ -195,8 +200,7 @@ export const Council = {
   verdictEvidenceQuality: {
     name: "verdictEvidenceQuality",
     label: "Verdict Evidence Quality",
-    view: "text",
-    htmlType: "text",
+    view: "dropdown",
   },
   dissents: {
     name: "dissents",

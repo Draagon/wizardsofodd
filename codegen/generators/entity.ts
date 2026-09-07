@@ -1,6 +1,6 @@
 // REFERENCE TEMPLATE — copy this into your repo (e.g. codegen/generators/entity.ts) and own it.
 // Then import it LOCALLY in metaobjects.config.ts:
-//   import { entityFile } from "./codegen/generators/entity";
+//   import { entityFile } from "./codegen/generators/entity.js";
 //
 // RUNTIME: this file executes under whatever runs `meta gen`, and the published CLI's
 // shebang is `#!/usr/bin/env node` — so it runs under NODE even in a Bun project. Do not
@@ -27,7 +27,12 @@
 // The composition (`renderEntity`) is the relocated body of the built-in entity composer —
 // byte-identical to start, now YOURS to change. It imports only public engine primitives.
 
-import { joinCode, type Code } from "ts-poet";
+// ts-poet combinators come from the engine package, NOT a bare "ts-poet" import: the
+// Code sections composed here must share ONE ts-poet instance with the render*
+// primitives below, or (with a globally-installed / linked CLI, where the project and
+// the CLI resolve ts-poet to different physical copies) every section renders
+// standalone with its own duplicate import header.
+import { joinCode, type Code } from "@metaobjectsdev/codegen-ts";
 import type { MetaObject } from "@metaobjectsdev/metadata";
 import {
   perEntity,
@@ -53,6 +58,7 @@ import {
   SHARED_ENUMS_BASENAME,
   // predicates + helpers:
   isProjection,
+  isWriteThrough,
   isAbstract,
   hasWritableRdbSource,
   isTphSubtype,
@@ -107,8 +113,15 @@ function renderEntity(entity: MetaObject, ctx: RenderContext, opts?: RenderEntit
   if (!runtime || !hasWritableRdbSource(entity) || isTphSubtype(entity)) {
     return renderValueObjectFile(entity, ctx.apiPrefix, ctx);
   }
+  // #214 — a write-through entity read-view (writable table + a read-only replica view +
+  // derived origin.* fields) needs the hybrid file (table + `.existing()` view decl + a
+  // z.infer read type carrying the derived fields). Delegate to the engine composer rather
+  // than duplicate that branch here (mirrors the projection delegation above).
+  if (isWriteThrough(entity)) {
+    return renderEntityFile(entity, ctx, { allowlists });
+  }
 
-  // Write-through entity → the full Drizzle table file. Reorder/drop sections freely.
+  // Vanilla entity → the full Drizzle table file. Reorder/drop sections freely.
   const enumAliases = renderEnumTypeAliases(entity, ctx);
   const tphBlock = renderTphDiscriminatorUnion(entity, ctx.loadedRoot);
   const tphBase = tphBlock !== null && isTphDiscriminatorBase(entity, ctx.loadedRoot);

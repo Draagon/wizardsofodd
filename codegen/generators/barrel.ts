@@ -1,6 +1,6 @@
 // REFERENCE TEMPLATE — copy this into your repo (e.g. codegen/generators/barrel.ts) and own it.
 // Then import it LOCALLY in metaobjects.config.ts instead of from the package:
-//   import { barrel } from "./codegen/generators/barrel";
+//   import { barrel } from "./codegen/generators/barrel.js";
 //
 // RUNTIME: this file executes under whatever runs `meta gen`, and the published CLI's
 // shebang is `#!/usr/bin/env node` — so it runs under NODE even in a Bun project. Do not
@@ -58,7 +58,7 @@ export const barrel = function barrel(opts?: BarrelOpts): Generator {
       path: "index.ts",
       content: await formatTs(
         renderBarrel(
-          entities.map((e) => ({ name: e.name, package: e.package })),
+          entities.map((e) => ({ name: ctx.renderContext!.valueObjectEmittedName(e), package: e.package })),
           ctx.renderContext!.extStyle,
           ctx.renderContext!.selfTarget,
           ctx.renderContext!.entityModuleTarget,

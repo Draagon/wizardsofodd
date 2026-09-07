@@ -60,8 +60,14 @@ export type Council = InferSelectModel<typeof councils>;
 export type CouncilInsert = InferInsertModel<typeof councils>;
 export type CouncilUpdate = Partial<CouncilInsert>;
 export type CouncilStatus = "pending" | "partial" | "complete" | "error";
-export { type GuildVerdict } from "./enums";
-export { type EvidenceGrade } from "./enums";
+export const CouncilStatusEnum = z.enum([
+  "pending",
+  "partial",
+  "complete",
+  "error",
+]);
+export { type GuildVerdict, GuildVerdictEnum } from "./enums";
+export { type EvidenceGrade, EvidenceGradeEnum } from "./enums";
 export const CouncilInsertSchema = z.object({
   id: z
     .string()
@@ -179,11 +185,13 @@ export const Council = {
     label: "Status",
     view: "dropdown",
     rules: { required: "Status is required" },
+    options: ["pending", "partial", "complete", "error"] as const,
   },
   verdictStance: {
     name: "verdictStance",
     label: "Verdict Stance",
     view: "dropdown",
+    options: ["yes", "no", "it_depends", "unanswerable"] as const,
   },
   verdictConfidence: {
     name: "verdictConfidence",
@@ -201,6 +209,7 @@ export const Council = {
     name: "verdictEvidenceQuality",
     label: "Verdict Evidence Quality",
     view: "dropdown",
+    options: ["strong", "mixed", "thin", "none"] as const,
   },
   dissents: {
     name: "dissents",

@@ -1,6 +1,6 @@
 // REFERENCE TEMPLATE — copy this into your repo (e.g. codegen/generators/queries.ts) and own it.
 // Then import it LOCALLY in metaobjects.config.ts:
-//   import { queriesFile } from "./codegen/generators/queries";
+//   import { queriesFile } from "./codegen/generators/queries.js";
 //
 // RUNTIME: this file executes under whatever runs `meta gen`, and the published CLI's
 // shebang is `#!/usr/bin/env node` — so it runs under NODE even in a Bun project. Do not
@@ -13,20 +13,31 @@
 //                the inline `Db` type block above them to emit for another query builder.
 // use-when:      you want generated typed finders over Drizzle. Drop it if you hand-write
 //                all of your data access.
-// emits:         <target>/<Entity>.queries.ts per write-through entity.
-// customize:     the finder assembly below is OWNED — reorder, add/drop verbs, change the Db
-//                type alias, add your own finders. The render<Verb>Fn primitives emit each
-//                block; call your own instead to change a verb's body. THIS COPY is trimmed to
-//                READ-ONLY finders (a worked example of the "drop verbs" customization): this
-//                app's writes are bespoke, so create/update/delete are dropped — see renderQueries.
-// composes-with: entity.ts (imports the table + row type it emits).
+// THIS COPY:     trimmed to READ-ONLY finders (a worked example of the "drop verbs"
+//                customization). This app's writes are bespoke — hand-rolled inserts and
+//                updates in src/db/queries.ts over these generated row types — the same
+//                stance as the deliberately-absent routes generator (see
+//                metaobjects.config.ts). So create/update/delete, and the #203
+//                insertPreserving escape hatch that attaches to create, are all dropped.
+// emits:         <target>/<Entity>.queries.ts per source-backed object (any source.rdb kind,
+//                incl. read-only projections) — skipped for sourceless objects (incl. every
+//                object.value, source-less by value purity) and TPH subtypes (#248 R2).
+// customize:     the vanilla CRUD assembly below is OWNED — reorder, drop verbs (e.g. no delete),
+//                change the Db type alias, add your own finders. The render<Verb>Fn primitives emit
+//                each block; call your own instead to change a verb's body.
+// composes-with: entity.ts (imports the table + InsertSchema it emits).
 //
 // NOTE: the advanced TPH-base + projection variants delegate to the engine's composer
 // (`renderQueriesFile`) — they're rarely customized. To own those too, copy their branches
 // out of the package source. The vanilla path here is byte-identical to the built-in.
 
-import { code, joinCode, type Code } from "ts-poet";
-import { OBJECT_SUBTYPE_VALUE, type MetaObject } from "@metaobjectsdev/metadata";
+// ts-poet combinators come from the engine package, NOT a bare "ts-poet" import: the
+// Code sections composed here must share ONE ts-poet instance with the render*
+// primitives below, or (with a globally-installed / linked CLI, where the project and
+// the CLI resolve ts-poet to different physical copies) every section renders
+// standalone with its own duplicate import header.
+import { code, joinCode, type Code } from "@metaobjectsdev/codegen-ts";
+import type { MetaObject } from "@metaobjectsdev/metadata";
 import {
   perEntity,
   type Generator,
@@ -39,7 +50,9 @@ import {
   reverseFksFor,
   isTphDiscriminatorBase,
   isProjection,
+  isWriteThrough,
   isTphSubtype,
+  hasAnyRdbSource,
   renderQueriesFile, // engine composer — used for the delegated variants
   formatTs,
   entityOutputPath,
@@ -49,7 +62,9 @@ import {
 // --- composition (OWNED for the common case) ---
 function renderQueries(obj: MetaObject, ctx: RenderContext): string {
   // Advanced variants delegate to the engine (byte-identical). Own them by copying their source.
-  if (isTphDiscriminatorBase(obj, ctx.loadedRoot) || isProjection(obj)) {
+  // #214 — a write-through entity read-view (reads → replica view, writes → table) delegates
+  // too; owning it inline would duplicate the hybrid read/write routing.
+  if (isTphDiscriminatorBase(obj, ctx.loadedRoot) || isProjection(obj) || isWriteThrough(obj)) {
     return renderQueriesFile(obj, ctx);
   }
 
@@ -81,12 +96,6 @@ function renderQueries(obj: MetaObject, ctx: RenderContext): string {
       ? `type Db = PgDatabase<PgQueryResultHKT, Record<string, unknown>>;`
       : `type Db = BaseSQLiteDatabase<"sync" | "async", unknown, Record<string, unknown>>;`;
 
-  // READ-ONLY data access: this app's writes are bespoke (hand-rolled inserts/updates in
-  // src/db/queries.ts, over these generated row types) — the same stance as the
-  // deliberately-absent routes generator (see metaobjects.config.ts). So this owned composer
-  // emits only the read surface (findById, list, and the ADR-0038 reverse finders below) and
-  // drops create/update/delete. The read fns need only the table + row type; the write-only
-  // InsertSchema/Patch/UpdateSchema are intentionally not imported.
   const literalImports = code`
 ${dbTypeImport}
 ${dbTypeAlias}
@@ -120,10 +129,15 @@ export interface QueriesFileOpts {
   target?: string;
 }
 
-// value objects have no identity (findById/updateById would target a non-existent column),
-// and TPH subtypes emit no standalone queries file — both are skipped unconditionally.
-const skipNonQueryable = (e: MetaObject): boolean =>
-  e.subType !== OBJECT_SUBTYPE_VALUE && !isTphSubtype(e);
+// #248 R2: persistability derives from declared/inherited source, never subtype.
+// An object with no source.rdb (of ANY kind) isn't backed by any store — the
+// rendered queries module would emit findById/updateById/deleteById against
+// Drizzle table/schema exports the entity file never emits for it (value
+// objects are subsumed here too: value purity bans sources on them, so no
+// loadable value ever has hasAnyRdbSource === true). TPH subtypes emit no
+// standalone queries file either — their per-subtype CRUD helpers live in the
+// discriminator base's queries file (which targets the single shared table).
+const skipNonQueryable = (e: MetaObject): boolean => hasAnyRdbSource(e) && !isTphSubtype(e);
 
 export const queriesFile = function queriesFile(opts?: QueriesFileOpts): Generator {
   const userFilter = opts?.filter;

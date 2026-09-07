@@ -71,7 +71,8 @@ export type CouncilTurn = InferSelectModel<typeof councilTurns>;
 export type CouncilTurnInsert = InferInsertModel<typeof councilTurns>;
 export type CouncilTurnUpdate = Partial<CouncilTurnInsert>;
 export type CouncilTurnKind = "wizard" | "error";
-export { type WizardStance } from "./enums";
+export const CouncilTurnKindEnum = z.enum(["wizard", "error"]);
+export { type WizardStance, WizardStanceEnum } from "./enums";
 export const CouncilTurnInsertSchema = z.object({
   councilId: z.string().min(1).max(16),
   ordinal: z.number().int(),
@@ -180,12 +181,20 @@ export const CouncilTurn = {
     label: "Kind",
     view: "dropdown",
     rules: { required: "Kind is required" },
+    options: ["wizard", "error"] as const,
   },
   stance: {
     name: "stance",
     label: "Stance",
     view: "dropdown",
     rules: { required: "Stance is required" },
+    options: [
+      "supports",
+      "opposes",
+      "complicates",
+      "reframes",
+      "abstains",
+    ] as const,
   },
   takeMarkdown: {
     name: "takeMarkdown",

@@ -31,10 +31,10 @@ import { wizardsofoddProvider } from "./src/codegen/wizardsofodd-provider";
 
 // Cloudflare Worker target: SQLite dialect (works directly with drizzle-orm/d1).
 //
-// No routesFile*() generator: 0.15 ships routesFileHono for generic CRUD REST
-// routes, but this Worker deliberately exposes no generic entity CRUD surface —
-// its only routes are the bespoke SSE council endpoints in src/index.ts. So
-// there is nothing for a routes generator to emit here.
+// No routesFile*() generator: `routes-hono` is ownable via `meta eject` for generic
+// CRUD REST routes, but this Worker deliberately exposes no generic entity CRUD
+// surface — its only routes are the bespoke SSE council endpoints in src/index.ts.
+// So there is nothing for a routes generator to emit here.
 //
 // `providers: [wizardsofoddProvider]` registers our Anthropic vendor attrs on
 // core `template.toolcall` AND the project-local `template.streamFrame` subtype,

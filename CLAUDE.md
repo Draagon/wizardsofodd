@@ -25,7 +25,7 @@ protocol, with a build-time drift gate. See [`README.md`](README.md) and
 | Persistence | Cloudflare D1 + Drizzle, schema + queries driven by MetaObjects codegen (ADR-0002) |
 | Rate limit / bot gate | Workers KV + Cloudflare Turnstile |
 | Search (optional, Lorekeeper's RAG) | a self-hosted SearXNG behind Cloudflare Access, via the `SEARCH_URL` secret; degrades gracefully if unset |
-| Metadata / codegen | `@metaobjectsdev/*@0.15.18` — loader, `meta gen` (codegen), `meta verify` (drift gate) |
+| Metadata / codegen | `@metaobjectsdev/*@1.0.0` — loader, `meta gen` (codegen), `meta verify` (drift gate) |
 | Tests | Vitest via `@cloudflare/vitest-pool-workers` + jsdom |
 
 ## Layout

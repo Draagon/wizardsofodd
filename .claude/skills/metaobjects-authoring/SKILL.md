@@ -49,10 +49,19 @@ aggregate — that is almost always **metadata you have not declared yet.** In o
 1. **Search the vocabulary** — `meta types <term>`, or `meta types --all
    <what-it-does>` to search by behavior. There are field subtypes, relationships,
    projections, origins, identities, sources, and attributes you may not know exist.
-   Find the construct that models it.
+   Find the construct that models it. Add `--detail` for one construct's valid
+   `@attrs`, or `--format json` for the same answer as one machine-readable document
+   — that form carries every match (`--limit` never truncates it) with each attr's
+   `allowedValues`, so you read the accepted values rather than guessing them.
 2. **Declare it and generate** — then *consume* the generated query/type/route;
    never reimplement it alongside.
-3. **Only if no construct can express it** — and you have actually looked —
+3. **If the model is right but the generated OUTPUT is wrong, change your generator.**
+   Naming, file layout, imports, framework, signatures are generator concerns, not
+   reasons to hand-write. The generators are in *your* repo and are yours to edit — a
+   standing rule not to change the MetaObjects repo does not reach them; they are a
+   different repository. Editing one is ordinary work, not an escalation. (See
+   `metaobjects-codegen` → "Your generators are yours".)
+4. **Only if no construct can express it** — and you have actually looked —
    hand-write it, wired to generated types. Business algorithms, external
    integrations, and bespoke interactions are legitimately hand-written; CRUD,
    validation, finders, relationships, and derived/aggregate data are not.
@@ -86,10 +95,20 @@ Read the existing code and schema *first*, then model to reproduce them:
 
 **Customize the CODEGEN to match the existing code before you change the existing code.**
 If generated output doesn't match the code's shape (naming, file layout, imports,
-signatures), **tune the generator/template/config to reproduce it** — that is the
-intended adoption path (owned generators, `outputPattern`, naming strategy — see the
-`metaobjects-codegen` skill), **not a hack**. Reshaping working call sites to satisfy
-the generator's defaults is the *last* resort, not the first.
+signatures), **tune the generator/template/config to reproduce it** — naming strategy
+first, then the generator or the template. **Which lever you have depends on the port,
+so establish that before planning:** on TypeScript and the JVM you can own a generator
+outright (TS scaffolds copies into your repo; the JVM loads your class from the project
+classpath), while on C# and Python the generator registry is closed and a **Mustache
+template** is the customization path — a real one, with `scope` and `outputPattern`
+doing the walk and the file naming. The `metaobjects-codegen` skill has the per-port
+matrix and defines `outputPattern`; read it before concluding a shape is unreachable.
+**Whichever lever you get, it is yours to edit.** A standing instruction not to
+change the MetaObjects repo says nothing about your own generators or templates —
+reading it as though it did is how an adoption ends up hand-written, and it is the most
+common way this step is skipped. Editing a generator or a template here is ordinary
+adoption work: not an escalation, not a hack, and nothing to ask permission for. Reshaping working call sites to satisfy the
+generator's defaults is the *last* resort, not the first.
 
 **Minimize churn to code the generator is not replacing.** The ONLY existing code that
 should change is the hand-written layer codegen now **owns** (the hand-rolled
@@ -742,6 +761,16 @@ Multi-source: multiple `source.rdb` children, each with a `@role`, exactly one
 ```json
 { "source.rdb": { "@kind": "view", "@view": "v_author", "@schema": "blog" } }
 ```
+
+**This declaration is the only place a physical name is ever spelled.** Codegen emits a
+per-object names artifact from it (`<Entity>Names` — `ProgramNames.fields.createdAt.column`,
+`ProgramNames.CreatedAtColumn`, `PROGRAM_CREATED_AT_COLUMN`, per port), the generated table
+binding reads that artifact, and hand-written SQL, repositories and migration scripts
+reference it — so a consumer never restates `v_author` or `created_at`, and a rename here
+propagates. Declare `@column` explicitly whenever the physical name is not the naming
+strategy's answer (`callPurpose` → `purpose_code`): nothing downstream can recover that
+mapping by derivation, and the constant is what carries it. (See `metaobjects-codegen` →
+"Never hand-write a physical name".)
 
 **An entity's PRIMARY source must be writable** (`table`) — read-only kinds are
 legal only in non-primary roles.

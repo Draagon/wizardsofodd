@@ -20,8 +20,8 @@ export interface VerdictOutput {
   splits?: string[];
   verifyNote?: string;
 }
-export { type GuildVerdict } from "./enums";
-export { type EvidenceGrade } from "./enums";
+export { type GuildVerdict, GuildVerdictEnum } from "./enums";
+export { type EvidenceGrade, EvidenceGradeEnum } from "./enums";
 export const VerdictOutputInsertSchema = z.object({
   stance: GuildVerdictEnum,
   confidence: z.number().min(0).max(1),

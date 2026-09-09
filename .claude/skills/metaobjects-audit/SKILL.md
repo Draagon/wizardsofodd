@@ -23,8 +23,12 @@ Actual cutovers run through the existing skills mapped per finding tier (§ Brid
   `com.metaobjects:*` / `metaobjects` / `MetaObjects.*` deps).
 - [ ] Count metadata source lines + all `@generated` / `DO NOT EDIT` files repo-wide.
 - [ ] **Owned-generators check:** does the project own generators at `codegen/generators/*`
-  (scaffold-and-own via `meta init`), or still import the **deprecated** package export
-  (`@metaobjectsdev/codegen-ts/generators`)? Not owning is itself a finding.
+  (scaffold-and-own via `meta init`), or still import `entityFile` / `queriesFile` /
+  `routesFile` / `barrel` from `@metaobjectsdev/codegen-ts/generators`? Those four were
+  REMOVED at 1.0, so an import of them is an upgrade blocker, not just a style finding.
+  **Match the four NAMES, never the subpath alone** — that subpath is the supported home of
+  the non-ownable generators (`promptRender`, `outputParser`, `routesFileHono`, …), so
+  flagging a hit on the path convicts a correct project.
 - [ ] **Cross-language version consistency (silent-drift check).** If the project uses MetaObjects in more than one language (e.g. a TS web client + a Java/Python/C# backend), enumerate EVERY MetaObjects package across ALL ecosystems (npm `@metaobjectsdev/*`, Maven `com.metaobjects:*`, PyPI `metaobjects`, NuGet `MetaObjects.*`) and record each version. **The version-number LINES differ by ecosystem (npm/PyPI/NuGet `0.x`/`1.x` vs Maven `7.x`/`8.x`), so you CANNOT eyeball drift** — a `0.12` next to a `7.7` looks fine but can be badly out of sync. Compare the **`metamodelVersion`** each port reports (the shared spec version on the registry manifest): a mismatch is real cross-language drift and a **finding** — the ports disagree on vocabulary/wire behavior. Also flag any port not on the latest release for its ecosystem. (This is a known real-world failure mode: newest backend, stale client, invisible because the numbers differ.)
 - [ ] Classify: **Greenfield** (none/minimal) · **Partial** · **Deep** → choose path below.
 
@@ -118,19 +122,25 @@ code behind a grep hit; a "duplicate" validator's *divergence* is the finding.
     references repo-wide (grep the emitted symbol / module path for importers):
     delete it and stop generating it.
   - **Artifacts an entity doesn't need** — REST routes / TanStack grids / forms /
-    hooks emitted for an entity that has no such surface. The per-entity opt-outs
-    exist for exactly this (`@emitRoutes: false`, `@emitTanstack: false`, a
-    `layout.dataGrid`-gated grid): flag the opt-out NOT used where the artifact is
-    unused.
+    hooks emitted for an entity that has no such surface. The remedy is the
+    generator's own `filter` option (`routesFile({ filter: (e) => e.name !== "Audit" })`,
+    `tanstackQuery({ filter })`), which is ANDed with the generator's built-in gates
+    and so can only NARROW what emits; a grid additionally needs a `layout.dataGrid`
+    on the entity at all. Flag the unused artifact and name the filter that would
+    suppress it. **Never recommend an `@emit*` attribute** — `@emitRoutes`,
+    `@emitTanstack`, `@emitForm`, `@emitGrid` and `@emitAngular` were never
+    registered vocabulary, so they passed `meta gen` (open load) and FAILED
+    `meta verify` (strict). A project carrying one is a **finding**, not an opt-out:
+    report it and route to `meta upgrade --apply` plus the generator config above.
   - **Generators wired but unconsumed** — a generator in `metaobjects.config.ts`
     `generators: [...]` (or the per-port equivalent) whose whole output class no
     code imports: drop the generator rather than generate into the void.
   - **Wrong target / duplicate output** — the same logical artifact emitted to two
     places (a mis-set per-target `outDir`), one of which is orphaned.
-  Recommend generating ONLY what is consumed — narrow the generator set + use the
-  per-entity opt-outs. A smaller, fully-consumed generated surface beats a large one
-  with dead files (which also make the leverage ratio lie; discount them from the
-  census).
+  Recommend generating ONLY what is consumed — decide per generator: drop the ones
+  whose whole output class nothing imports, and narrow the ones that over-emit with
+  their `filter`. A smaller, fully-consumed generated surface beats a large one with
+  dead files (which also make the leverage ratio lie; discount them from the census).
 - [ ] **G. Runtime-contract anti-patterns.** Module-global `db` vs context-as-parameter
   (ADR-0008); wire-canonicalization in the query path vs native in-process return types
   (ADR-0019); runtime reflection to resolve a type from FQN vs generated static imports /
@@ -331,13 +341,17 @@ Per finding: `file:line` → what → generated-equivalent exists? → recommend
    - **Not expressible → carry it in `@sql` or `@unmanaged`, never a hand-edited migration (#208, ADR-0043).** When a NAMED irreducible construct blocks origin authoring — recursive CTE, window function / `OVER`, `UNION` / `INTERSECT` / `EXCEPT`, lateral join — the body still belongs in the metadata: carry the hand-written SQL in the `source.rdb` **`@sql`** escape — a read-only-`@kind` body the tool REGISTERS, fingerprints, and drift-checks (adopt a pre-existing view with `meta migrate --allow adopt-view`); `@sql` forbids `origin.*` children (two sources of truth). A DB object whose DDL is owned **entirely elsewhere** (Flyway / a hand-migration) → mark its source **`@unmanaged: true`** (legal on any `@kind` incl. `table`); `meta migrate` never creates/drops/drift-checks it and `verify --db` reports it as external. `@sql` and `@unmanaged` are mutually exclusive. **Only a view left *undeclared*** — neither modeled, nor `@sql`, nor `@unmanaged` — is truly *unmanaged*, invisible to `meta verify --db`, so this audit is the only gate that sees it. "It's an aggregation" is NOT an irreducibility justification (plain count/sum/avg/min/max rollups are `origin.aggregate`); nor is a `DISTINCT ON` pick-one-row (`origin.first`) or a non-aggregate expression column (`origin.computed`).
 9. **A closed variant-set hand-modeled per instance** — N sibling modules / classes / config blocks, one per channel / provider / target, sharing a payload + config shape and diverging only by transport. Grep for sibling-file families and switch-on-a-string dispatch; verify the set is closed and recurring (never a one-off). → axis I "New-vocabulary OPPORTUNITY" (VOCAB CANDIDATE, advisory).
 10. **N declarations of one FIELD across objects (same-name-field census)** — the field-level sibling of signature 6. Census field names across `object.*` nodes (`grep -rn 'name: <field>'` the metadata dir); a name recurring in ≥2 objects where a canonical owner exists — one whose name the field embeds (`<owner><Field>`: `wizardId` → `Wizard.id`, `orderTotal` → `Order.total`) or whose type+constraints it matches — is provenance loss → `extends: Owner.field` (dotted child targets, ADR-0029). **VERIFY by diffing the copies' attrs: a `@maxLength` / `@required` / validator divergence across them is drift already shipping — cite it.** Evidence multiplier: `extends` already used elsewhere in the repo raises confidence. Do NOT flag: generic names on unrelated concepts (`id` / `name` / `status` with no owner-embedding name and no matching constraints); required per-node attrs a loader forces (e.g. `payloadRef` / `format` on sibling `template.prompt` nodes — a product constraint, not a copy).
+11. **A physical table / column / schema name spelled as a literal outside its metadata declaration** — in a hand-written repository, raw SQL, a migration script, a log line, or a hand-maintained body-to-column map. Every port emits a per-object names artifact (`<Entity>Names` / `<entity_snake>_names.py`) from the declaration, so a literal is a second spelling of the same fact; and because the physical column is free-form, deriving it from the field name is a guess that fails silently. **No verify subverb sees this** — `--codegen` diffs generated files, `--db` compares schema to metadata — so this audit is the only gate. Remedy: reference the constant — but **check the artifact is emitted at all before scoring the literals, because on THREE of five ports an existing project emits none**. C# and Python have a real default suite and get it by upgrading; TypeScript's `generators: [...]` and the JVM's `<generators>` are each the COMPLETE list, so `meta init` scaffolding `namesFile()` covers only a project initialized at 1.0 and upgrading the package never edits a config written earlier. Where no artifact exists, the un-wired generator is the FIRST finding and the first remedy (`namesFile()` on TS after `meta eject names`; `SpringNamesGenerator` / `KotlinNamesGenerator` in the pom) — score the literals under it rather than as N independent findings, since one config line fixes the cause and generated code stops embedding the names too. **Do NOT flag:** a typed ORM handle in its place (a Drizzle column object, an Exposed `Column`, an EF property — replacing one with a string is a regression); a physical name inside a `source.rdb` hand-written SQL body (a metadata document cannot import a constant, which is why that body is fingerprinted); a flattened value-object composite column (it belongs to no single field of either object); a write-through entity's replica view name (the artifact holds the PRIMARY source's); a relationship-synthesized foreign-key column (derived, never declared). A hand-written repository that imports `<Entity>Names` is the gold standard — call it out as good.
 
 ---
 
 ## Owned-codegen & scaffold-and-own assessment
 
-- If config imports deprecated `@metaobjectsdev/codegen-ts/generators` instead of
-  owned `codegen/generators/*`, recommend the scaffold-and-own migration (`meta init`).
+- If config imports `entityFile` / `queriesFile` / `routesFile` / `barrel` from
+  `@metaobjectsdev/codegen-ts/generators` instead of owned `codegen/generators/*`,
+  recommend the scaffold-and-own migration (`meta init`, or `meta eject <name>`) — on 1.0+
+  those four no longer resolve. Importing the non-ownable generators from that subpath is
+  correct and is not a finding.
 - Audit owned generators: (a) regenerate clean? (b) drifted from reference templates —
   intentional (good) vs stale/accidental (missed upstream fix)? (c) hand-rolling a walk
   that a declarative `scope` + `outputPattern` could replace? (d) bespoke shape better as

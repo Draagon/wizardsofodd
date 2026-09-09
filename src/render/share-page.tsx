@@ -3,6 +3,7 @@ import { VerdictCard } from "../web/components/VerdictCard";
 import { WIZARDS } from "../personas/generated/wizards";
 import { councilVerdict, turnToWizardOutput, type CouncilWithTurns } from "../db/queries";
 import type { WizardTurn, Verdict } from "../web/hooks/useCouncilStream";
+import { CouncilStatusEnum } from "../db/generated/Council";
 
 interface Props {
   data: CouncilWithTurns;
@@ -19,7 +20,7 @@ export function SharePage({ data }: Props) {
 
   const records = turns.map(toRecord);
   const verdict: Verdict | null =
-    council.status === "complete" ? councilVerdict(council) : null;
+    council.status === CouncilStatusEnum.enum.complete ? councilVerdict(council) : null;
 
   return (
     <main className="homepage share-page">

@@ -10,6 +10,7 @@ import { findCouncilById } from "./generated/Council.queries";
 import { findCouncilTurnsByCouncil } from "./generated/CouncilTurn.queries";
 import type { Council } from "./generated/Council";
 import type { CouncilTurn } from "./generated/CouncilTurn";
+import { CouncilStatusEnum } from "./generated/Council";
 
 const { councils, councilTurns } = schema;
 
@@ -30,7 +31,7 @@ export async function insertCouncil(db: Db, args: InsertCouncilArgs): Promise<st
         id: slug,
         visitorId: args.visitorId,
         question: args.question,
-        status: "pending",
+        status: CouncilStatusEnum.enum.pending,
         createdAt: now,
       });
       return slug;
@@ -58,7 +59,7 @@ export interface RecordErrorTurnArgs {
 
 /** Recording any turn advances the council from 'pending' to 'partial'. */
 async function advanceCouncilToPartial(db: Db, councilId: string): Promise<void> {
-  await db.update(councils).set({ status: "partial" }).where(eq(councils.id, councilId));
+  await db.update(councils).set({ status: CouncilStatusEnum.enum.partial }).where(eq(councils.id, councilId));
 }
 
 /** Inserts a wizard turn (structured) and flips council.status to 'partial'. */
@@ -117,7 +118,7 @@ function verdictColumns(v: VerdictOutput) {
 export async function finalizeCouncil(db: Db, councilId: string, v: VerdictOutput): Promise<void> {
   await db
     .update(councils)
-    .set({ status: "complete", ...verdictColumns(v), completedAt: Date.now() })
+    .set({ status: CouncilStatusEnum.enum.complete, ...verdictColumns(v), completedAt: Date.now() })
     .where(eq(councils.id, councilId));
 }
 

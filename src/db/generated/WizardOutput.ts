@@ -13,7 +13,7 @@ export interface WizardOutput {
   keyClaims: string[];
   citations?: SourceLens[];
 }
-export { type WizardStance } from "./enums";
+export { type WizardStance, WizardStanceEnum } from "./enums";
 export const WizardOutputInsertSchema = z.object({
   stance: WizardStanceEnum,
   takeMarkdown: z.string().min(1),

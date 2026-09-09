@@ -10,49 +10,55 @@ import {
   text,
 } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
+import { CouncilNames } from "./Council.names";
 import { Dissent, DissentInsertSchema } from "./Dissent";
 import { EvidenceGradeEnum, GuildVerdictEnum } from "./enums";
 
 export const councils = sqliteTable(
-  "councils",
+  CouncilNames.sources.primary.table,
   {
-    id: text("id").primaryKey(),
-    visitorId: text("visitor_id").notNull(),
-    question: text("question").notNull(),
-    status: text("status", {
+    id: text(CouncilNames.fields.id.column).primaryKey(),
+    visitorId: text(CouncilNames.fields.visitorId.column).notNull(),
+    question: text(CouncilNames.fields.question.column).notNull(),
+    status: text(CouncilNames.fields.status.column, {
       enum: ["pending", "partial", "complete", "error"] as const,
     }).notNull(),
-    verdictStance: text("verdict_stance", {
+    verdictStance: text(CouncilNames.fields.verdictStance.column, {
       enum: ["yes", "no", "it_depends", "unanswerable"] as const,
     }),
-    verdictConfidence: real("verdict_confidence"),
-    verdictMarkdown: text("verdict_markdown"),
-    verdictEvidenceQuality: text("verdict_evidence_quality", {
-      enum: ["strong", "mixed", "thin", "none"] as const,
-    }),
-    dissents: text("dissents_json", { mode: "json" }).$type<Dissent[]>(),
-    verdictAgreements: text("verdict_agreements_json", { mode: "json" }).$type<
-      string[]
+    verdictConfidence: real(CouncilNames.fields.verdictConfidence.column),
+    verdictMarkdown: text(CouncilNames.fields.verdictMarkdown.column),
+    verdictEvidenceQuality: text(
+      CouncilNames.fields.verdictEvidenceQuality.column,
+      {
+        enum: ["strong", "mixed", "thin", "none"] as const,
+      },
+    ),
+    dissents: text(CouncilNames.fields.dissents.column, { mode: "json" }).$type<
+      Dissent[]
     >(),
-    verdictSplits: text("verdict_splits_json", { mode: "json" }).$type<
-      string[]
-    >(),
-    verdictVerifyNote: text("verdict_verify_note"),
-    createdAt: integer("created_at").notNull(),
-    completedAt: integer("completed_at"),
+    verdictAgreements: text(CouncilNames.fields.verdictAgreements.column, {
+      mode: "json",
+    }).$type<string[]>(),
+    verdictSplits: text(CouncilNames.fields.verdictSplits.column, {
+      mode: "json",
+    }).$type<string[]>(),
+    verdictVerifyNote: text(CouncilNames.fields.verdictVerifyNote.column),
+    createdAt: integer(CouncilNames.fields.createdAt.column).notNull(),
+    completedAt: integer(CouncilNames.fields.completedAt.column),
   },
   (table) => [
     check(
-      "councils_status_chk",
-      sql`status IN ('pending', 'partial', 'complete', 'error')`,
+      `${CouncilNames.sources.primary.table}_${CouncilNames.fields.status.column}_chk`,
+      sql`${sql.raw(CouncilNames.fields.status.column)} IN ('pending', 'partial', 'complete', 'error')`,
     ),
     check(
-      "councils_verdict_stance_chk",
-      sql`verdict_stance IN ('yes', 'no', 'it_depends', 'unanswerable')`,
+      `${CouncilNames.sources.primary.table}_${CouncilNames.fields.verdictStance.column}_chk`,
+      sql`${sql.raw(CouncilNames.fields.verdictStance.column)} IN ('yes', 'no', 'it_depends', 'unanswerable')`,
     ),
     check(
-      "councils_verdict_evidence_quality_chk",
-      sql`verdict_evidence_quality IN ('strong', 'mixed', 'thin', 'none')`,
+      `${CouncilNames.sources.primary.table}_${CouncilNames.fields.verdictEvidenceQuality.column}_chk`,
+      sql`${sql.raw(CouncilNames.fields.verdictEvidenceQuality.column)} IN ('strong', 'mixed', 'thin', 'none')`,
     ),
   ],
 );
@@ -60,8 +66,14 @@ export type Council = InferSelectModel<typeof councils>;
 export type CouncilInsert = InferInsertModel<typeof councils>;
 export type CouncilUpdate = Partial<CouncilInsert>;
 export type CouncilStatus = "pending" | "partial" | "complete" | "error";
-export { type GuildVerdict } from "./enums";
-export { type EvidenceGrade } from "./enums";
+export const CouncilStatusEnum = z.enum([
+  "pending",
+  "partial",
+  "complete",
+  "error",
+]);
+export { type GuildVerdict, GuildVerdictEnum } from "./enums";
+export { type EvidenceGrade, EvidenceGradeEnum } from "./enums";
 export const CouncilInsertSchema = z.object({
   id: z
     .string()
@@ -121,8 +133,16 @@ export type CouncilPatch = z.input<typeof CouncilUpdateSchema>;
  *
  * Use these instead of magic strings so TS catches typos and refactors stay
  * coherent. Each non-dollar-prefixed key is a per-field object carrying
- * name, label, view, optional htmlType/placeholder/helpText, and the
+ * name, label, view, an htmlType where the field's view maps to one, and the
  * RHF-shaped validation rules derived from the field's validator children.
+ *
+ * placeholder and helpText are NOT emitted — no provider registers an attribute
+ * for them, so nothing here could derive one. (htmlType is emitted, but derived
+ * from the view subtype; the @htmlType override was removed for the same reason.)
+ * useEntityForm still honours placeholder if you add it: this file is generated,
+ * hand edits inside it survive regeneration through the three-way merge, and the
+ * consumers read this const rather than the metadata. That is the intended way
+ * to set it.
  *
  * Typical usage with the metaobjects React form helper:
  *
@@ -132,9 +152,8 @@ export type CouncilPatch = z.input<typeof CouncilUpdateSchema>;
  */
 export const Council = {
   $entity: "Council",
-  $table: "councils",
+  $table: CouncilNames.sources.primary.table,
   $path: "/councils",
-  $apiPrefix: "",
   id: {
     name: "id",
     label: "Id",
@@ -170,15 +189,15 @@ export const Council = {
   status: {
     name: "status",
     label: "Status",
-    view: "text",
-    htmlType: "text",
+    view: "dropdown",
     rules: { required: "Status is required" },
+    options: ["pending", "partial", "complete", "error"] as const,
   },
   verdictStance: {
     name: "verdictStance",
     label: "Verdict Stance",
-    view: "text",
-    htmlType: "text",
+    view: "dropdown",
+    options: ["yes", "no", "it_depends", "unanswerable"] as const,
   },
   verdictConfidence: {
     name: "verdictConfidence",
@@ -195,8 +214,8 @@ export const Council = {
   verdictEvidenceQuality: {
     name: "verdictEvidenceQuality",
     label: "Verdict Evidence Quality",
-    view: "text",
-    htmlType: "text",
+    view: "dropdown",
+    options: ["strong", "mixed", "thin", "none"] as const,
   },
   dissents: {
     name: "dissents",

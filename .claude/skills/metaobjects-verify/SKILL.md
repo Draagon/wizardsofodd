@@ -82,6 +82,16 @@ it and call the generated query/field instead of keeping the hand-rolled version
 This is the most common way a build ends up *declaring* a projection yet still
 hand-aggregating in a route — verify catches exactly that.
 
+**Read the whole report, not the first twenty lines.** Text output caps each
+advisory section at 20 lines and then says how many it held back; raise it with
+`--limit <n>` or remove it with `--limit all`. You are on a pipe, so your default
+format is already TOON: `meta verify` puts one machine-readable document on stdout
+carrying every gate's verdict, every anti-pattern finding and every requirement
+diagnostic — **uncapped** — with narration on stderr. `--format json` if you want
+JSON. A pass that did not run reports `status: "skipped"` and why, so an empty list
+always means "found nothing", never "never looked"; what the payload does not carry
+is named in its own `notRepresented[]`.
+
 **A bare `verify` is a partial check, not the full gate.** The Node/C# default runs
 only `--templates`; Java/Python's bare default runs only `--codegen` — either way,
 paired with the advisory anti-pattern pass above, never all three subverbs. Treat a
@@ -162,6 +172,24 @@ Make it a **ratchet**: it can't go green until the last offending field is migra
 `field.uuid`, so it doubles as the migration's completion criterion **and** a permanent
 backstop against reintroducing the smell. The same pattern generalizes to any semantic
 metadata rule your project wants enforced that `verify` structurally can't express.
+
+The other invariant worth a ratchet is **no physical name as a literal**. A table or
+column string in hand-written code is a second spelling of a declared fact, and nothing
+in `verify` compares your code to the schema — `--codegen` diffs generated files against
+a fresh regen, `--db` diffs the database against the metadata. Neither reads the
+repository you wrote. Build the alternation from the metadata's own `@table` / `@view` /
+`@column` values and fail on any hit outside generated output:
+
+```
+# fail the build if a declared physical name is spelled in hand-written source.
+# Illustrative — generate the alternation from your metadata, scope it to the
+# directories you hand-write. A typed ORM handle never matches this; a literal does.
+! grep -rEn '"(orders|created_at|purpose_code)"' src/ --exclude-dir=generated
+```
+
+Generated output is already covered upstream — every port's generators reference the
+names artifact instead of embedding the literal — so this ratchet is only ever about your
+code. The remedy for a hit is the `<Entity>Names` constant (`metaobjects-runtime-ui`).
 
 ## Schema migrations are the shared TypeScript engine — for every port
 

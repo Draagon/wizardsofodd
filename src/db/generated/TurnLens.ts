@@ -12,7 +12,7 @@ export interface TurnLens {
   oneLineSummary: string;
   confidence: number;
 }
-export { type WizardStance } from "./enums";
+export { type WizardStance, WizardStanceEnum } from "./enums";
 export const TurnLensInsertSchema = z.object({
   wizardId: z.string().min(1).max(32),
   wizardName: z.string().min(1).max(128),

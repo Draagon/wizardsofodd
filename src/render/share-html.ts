@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { SharePage } from "./share-page";
 import type { CouncilWithTurns } from "../db/queries";
+import { CouncilStatusEnum } from "../db/generated/Council";
 
 const ESCAPE_RE = /[&<>"']/g;
 const ESCAPE_MAP: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
@@ -11,7 +12,7 @@ function esc(s: string): string {
 
 export function renderShareHtml(data: CouncilWithTurns): string {
   const { council } = data;
-  const isComplete = council.status === "complete" && council.verdictMarkdown !== null;
+  const isComplete = council.status === CouncilStatusEnum.enum.complete && council.verdictMarkdown !== null;
   if (!isComplete) {
     return renderFallback(data);
   }
@@ -41,7 +42,7 @@ export function renderShareHtml(data: CouncilWithTurns): string {
 
 function renderFallback(data: CouncilWithTurns): string {
   const { council } = data;
-  const msg = council.status === "error"
+  const msg = council.status === CouncilStatusEnum.enum.error
     ? "The tower went dark during this council. The takes above are what made it through."
     : "This council is still in session — try again in a moment.";
   return `<!doctype html>

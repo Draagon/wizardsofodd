@@ -280,7 +280,7 @@ Then open https://wizardsofodd.com in a browser and confirm:
 Through the rc era this project relied on several codegen workarounds (vendored
 tarballs, local Zod schemas, `as unknown as` casts) for bugs in the payload/queries
 generators. They all shipped upstream and were removed; the project now tracks the
-current published line (`@metaobjectsdev/*@0.15.x`). The short version of that friction
+released line (`@metaobjectsdev/*@1.0.0`). The short version of that friction
 — and the bugs this project surfaced, including the drift-gate blind spot it had and the
 `promptRender` FQN fix that landed in 0.15.18 — lives in the friction log in
 [how-metaobjects-is-used.md](./how-metaobjects-is-used.md).

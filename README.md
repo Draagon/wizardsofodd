@@ -33,30 +33,46 @@ The wiring is one file: [`metaobjects.config.ts`](metaobjects.config.ts). Every 
 writes to a named **target** so `meta verify --codegen` diffs the *entire* generated
 surface — nothing escapes the gate.
 
-## The money shot — rename a field, watch it fail
+## The money shot — rename a field, watch the prompts fail
 
-The whole point of a metadata spine is that the model and everything generated from it
-**cannot silently drift apart**. Prove it in ~10 seconds, offline:
+The whole point of a metadata spine is that the model and everything built from it
+**cannot silently drift apart**, and the part no compiler covers is the prompt text.
+Ten wizard prompts are Mustache files that bind `{{question}}`. Rename that field and
+TypeScript has no idea: `tsc` never reads a `.mustache` file, so it stays green while every
+prompt would render an empty question. The template gate is what catches it. Prove it in
+~10 seconds, offline:
 
 Rename `question` in [`metaobjects/meta-wizard-user-payload.yaml`](metaobjects/meta-wizard-user-payload.yaml)
 to anything else, then run `npm run demo:drift`:
 
 ```
-meta: [brikUser]   (prompt) ERR_VAR_NOT_ON_PAYLOAD: question
+meta: [brikUser] (prompt) ERR_VAR_NOT_ON_PAYLOAD: question
 meta: [dominoUser] (prompt) ERR_VAR_NOT_ON_PAYLOAD: question
 …  (all 10 wizard prompts)
-meta: meta verify — 10 drift error(s) across 29 template(s).
+meta: meta verify — 10 drift error(s) across 22 template(s).
 meta: meta verify — codegen drift (2 file(s) differ from a fresh regen):
 meta:   ~ src/db/generated/WizardUserPayload.ts (committed content differs from a fresh regen)
 meta:   ~ src/render/generated/prompts.ts (committed content differs from a fresh regen)
 ```
 
-One field. **Ten prompt templates and two generated artifacts fail at once** — every
-Mustache prompt that binds `{{question}}`, the Zod/DB payload schema
-(`WizardUserPayload.ts`), and the typed render handle (`prompts.ts`). That's a guarantee a
-single-language ORM structurally can't give you, and the CI workflow
-([`.github/workflows/meta-verify.yml`](.github/workflows/meta-verify.yml)) runs exactly
-this gate on every PR.
+**The ten `ERR_VAR_NOT_ON_PAYLOAD` lines are the point.** Each is a Mustache prompt that
+still binds `{{question}}` after the payload stopped having one, and `npx tsc -b` passes
+on the same tree. Run `npm run gen:db` and `tsc` does start failing, but only on the two
+TypeScript call sites that build the payload; fix those and `tsc` is green again while
+`demo:drift` still reports all ten templates. The two codegen lines below them (the
+Zod/DB payload schema and the typed render handle) are the stale-generated-code gate,
+which disappears once you regenerate. The CI workflow
+([`.github/workflows/meta-verify.yml`](.github/workflows/meta-verify.yml)) runs this same
+gate on every PR.
+
+Put the tree back afterwards. If you ran `npm run gen:db` (or `meta gen`), the rename also
+touched generated files, TypeScript you edited, and the committed codegen manifest
+`.metaobjects/.gen-state/.hashes.json`, so restoring `metaobjects/` alone leaves the tree
+dirty. This restores all of it (and discards any other uncommitted edits under those three paths):
+
+```bash
+git restore metaobjects/ src/ .metaobjects/
+```
 
 > This repo *is* the demo, so the drift gate is held to its own standard: an earlier
 > version routed four generated files outside the checked directories via `../../` path

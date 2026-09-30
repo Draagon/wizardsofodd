@@ -2,7 +2,7 @@ import type { SystemBlock, AnthropicMessage } from "../llm/anthropic";
 import type { SearchResult } from "../llm/web-search";
 import { WIZARD_REGISTRY } from "../personas/generated/registry";
 import { templateProvider } from "../render/template-provider";
-import type { WizardUserPayload } from "../render/generated/prompts";
+import type { WizardUserPayload } from "../db/generated/WizardUserPayload";
 import type { WizardOutput } from "../db/generated/WizardOutput";
 import type { VerdictOutput } from "../db/generated/VerdictOutput";
 import {

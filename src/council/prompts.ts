@@ -4,14 +4,12 @@
 // src/render/generated/templates.ts at build time. This module preserves the
 // historical positional signatures so call sites and the byte-equivalence
 // snapshot test do not need to change.
-import {
-  renderVerdictSystem,
-  renderVerdictUser,
-  type WizardSystemPayload,
-  type WizardUserPayload,
-  type VerdictSystemPayload,
-  type VerdictUserPayload,
-} from "../render/generated/prompts";
+import { renderVerdictSystem, renderVerdictUser } from "../render/generated/prompts";
+// Payload types are the value objects' own generated types (ADR-0056, 1.0.5).
+import type { WizardSystemPayload } from "../db/generated/WizardSystemPayload";
+import type { WizardUserPayload } from "../db/generated/WizardUserPayload";
+import type { VerdictSystemPayload } from "../db/generated/VerdictSystemPayload";
+import type { VerdictUserPayload } from "../db/generated/VerdictUserPayload";
 import { templateProvider } from "../render/template-provider";
 import { WIZARD_REGISTRY } from "../personas/generated/registry";
 import type { Wizard } from "../db/generated/Wizard";

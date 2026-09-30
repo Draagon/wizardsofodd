@@ -11,7 +11,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 import { CouncilNames } from "./Council.names";
-import { Dissent, DissentInsertSchema } from "./Dissent";
+import { type Dissent, DissentInsertSchema } from "./Dissent";
 import { EvidenceGradeEnum, GuildVerdictEnum } from "./enums";
 
 export const councils = sqliteTable(
@@ -124,6 +124,11 @@ export const CouncilUpdateSchema = z.object({
   createdAt: z.number().int().optional(),
   completedAt: z.number().int().optional().nullable(),
 });
+
+/** Typed create shape for Council: the insert schema's INPUT (pre-transform) type. A
+ * renamed/dropped/misspelt field is a compile error at every `createCouncil` call site;
+ * the schema still validates at runtime. */
+export type CouncilCreate = z.input<typeof CouncilInsertSchema>;
 
 /** Typed patch shape for Council: every settable field, optional (FR-035 PATCH). A
  * renamed/dropped field is a compile error at every `updateCouncil` call site. */

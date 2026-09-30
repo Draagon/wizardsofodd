@@ -18,7 +18,7 @@ import {
 import { z } from "zod";
 import { councils } from "./Council";
 import { CouncilTurnNames } from "./CouncilTurn.names";
-import { SourceLens, SourceLensInsertSchema } from "./SourceLens";
+import { type SourceLens, SourceLensInsertSchema } from "./SourceLens";
 import { WizardStanceEnum } from "./enums";
 
 export const councilTurns = sqliteTable(
@@ -116,6 +116,11 @@ export const CouncilTurnUpdateSchema = z.object({
   keyClaims: z.array(z.string()).optional(),
   citations: z.array(SourceLensInsertSchema).optional().nullable(),
 });
+
+/** Typed create shape for CouncilTurn: the insert schema's INPUT (pre-transform) type. A
+ * renamed/dropped/misspelt field is a compile error at every `createCouncilTurn` call site;
+ * the schema still validates at runtime. */
+export type CouncilTurnCreate = z.input<typeof CouncilTurnInsertSchema>;
 
 /** Typed patch shape for CouncilTurn: every settable field, optional (FR-035 PATCH). A
  * renamed/dropped field is a compile error at every `updateCouncilTurn` call site. */

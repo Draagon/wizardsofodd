@@ -105,7 +105,8 @@ export const wizardRegistry = (): Generator => ({
 // Source of truth: data/wizards/*.yaml + metaobjects/prompts/*.yaml.
 
 import type { Wizard } from "../../db/generated/Wizard";
-import type { WizardSystemPayload, WizardUserPayload } from "../../render/generated/prompts";
+import type { WizardSystemPayload } from "../../db/generated/WizardSystemPayload";
+import type { WizardUserPayload } from "../../db/generated/WizardUserPayload";
 import type { Provider } from "@metaobjectsdev/render";
 import { ${renderImports} } from "../../render/generated/prompts";
 import { WIZARDS } from "./wizards";

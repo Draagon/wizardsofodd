@@ -45,10 +45,10 @@ src/
   index.ts              Hono Worker: council SSE endpoint, Env, Turnstile + rate-limit gates
   council/              orchestrator.ts (convene) · prompts.ts (compose generated handles)
   codegen/              custom generators (sse-frames, structured-completion, wizard-registry,
-                        wizard-data, mustache-templates) + wizardsofodd-provider.ts
+                        wizard-data, mustache-templates, lineage-mappers) + wizardsofodd-provider.ts
   db/                   D1 + Drizzle: client.ts, queries.ts, slug.ts, generated/
   llm/                  anthropic.ts, web-search.ts, generated/toolcalls.ts
-  render/               template-provider.ts, share-page.tsx (SSR), generated/{prompts,templates}.ts
+  render/               share-page.tsx (SSR), generated/{prompts,templates}.ts
   personas/generated/   wizards.ts + registry.ts (generated)
   web/                  React 18 SPA — components/, hooks/, lib/
   middleware/           rateLimit.ts, turnstile.ts

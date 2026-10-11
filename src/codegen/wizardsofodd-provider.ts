@@ -23,7 +23,7 @@
 // @eventName (wire SSE event name) + @payloadRef (the value-object the event
 // carries). No @textRef requirement — a stream-frame envelope has no renderable
 // body. The sse-frames generator walks every template.streamFrame node and emits
-// a discriminated-union CouncilFrame type + a typed sse() helper.
+// a discriminated-union CouncilFrame type + its wire encode/narrow helpers.
 //
 // Wired in metaobjects.config.ts as `providers: [wizardsofoddProvider]`.
 

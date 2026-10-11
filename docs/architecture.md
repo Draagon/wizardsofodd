@@ -114,8 +114,9 @@ React 18 SPA, Vite-bundled, no framework router (just route-on-URL in
 
 - `useCouncilStream` hook reads SSE frames from `POST /api/council`, parses
   them via `parseSseStream` (handles partial frames buffered across chunk
-  boundaries, skips unparseable frames without aborting), and reduces a
-  council state machine.
+  boundaries, skips unparseable frames without aborting), narrows each to the
+  generated `CouncilFrame` union with `toCouncilFrame` (dropping events this
+  build doesn't declare), and reduces a council state machine.
 - `WizardCard` and `VerdictCard` render the structured payload directly
   from the codegen'd `WizardOutput` / `VerdictOutput` types — `renderMarkdownLite`
   escape-then-render still handles wizard prose (no XSS surface).

@@ -37,7 +37,13 @@ once, reused by `WizardOutput`, `TurnLens`, and `CouncilTurn`. From that one spi
   `src/llm/generated/toolcalls.ts` — a wrapper whose runtime tool schema *is* the Zod
   `WizardOutputInsertSchema`.
 - `sseFrames` (custom) emits the `wizard` arm of the `CouncilFrame` union in
-  `src/web/generated/council-frames.ts`, carrying a `WizardOutput`.
+  `src/web/generated/council-frames.ts`, carrying a `WizardOutput`. The orchestrator yields
+  these frames, the Worker encodes them with `encodeCouncilFrame`, and the client narrows
+  them with `toCouncilFrame`.
+- `lineageMappers` (custom) emits the copies between `WizardOutput` and the objects whose
+  fields `extends` it: `CouncilTurn.lineage.ts` (persist a take, rehydrate it) and
+  `TurnLens.lineage.ts` (project a prior take into the next prompt). A field added to all
+  three can no longer be dropped by a hand-written copy.
 
 Rename a field on `WizardOutput`, or on the `WizardUserPayload` that the prompts bind, and the
 drift gate fails across all of it at once — the money shot in the [README](../README.md).
@@ -58,8 +64,9 @@ drift gate fails across all of it at once — the money shot in the [README](../
    rendered output.
 5. **Tool call** — `template.toolcall` + `structuredCompletion` generate `callEmitWizardTake` /
    `callEmitVerdict`: try → retry-with-stricter-reminder → optional typed fallback.
-6. **Persist / display** — the entity codegen persists the take's columns to D1; the SSR share
-   page ([`src/render/share-page.tsx`](../src/render/share-page.tsx)) reads the same generated types.
+6. **Persist / display** — the lineage mappers copy the take onto its D1 columns and back;
+   the SSR share page ([`src/render/share-page.tsx`](../src/render/share-page.tsx)) loads the
+   council with the generated `findCouncilWithTurns` (from `Council`'s `turns` composition).
 
 `meta verify --templates` checks that every `{{var}}` in a template is on its declared payload —
 so a renamed payload field can't silently degrade a prompt.
@@ -75,9 +82,9 @@ project's own vocabulary, strict-provenance-clean (ADR-0023):
   `registry.extend`. The structured fallback payload rides the registered `attr.properties` bag
   (an undeclared `@fallback` would fail load under strict provenance — `ERR_UNKNOWN_ATTR`).
 
-The three custom generators (`sseFrames`, `structuredCompletion`, `wizardRegistry`, plus
-`mustacheTemplates` + `wizardData`) implement the same `Generator` interface as the built-ins,
-each on a named `target` so the drift gate covers their output.
+The custom generators (`sseFrames`, `structuredCompletion`, `wizardRegistry`, `lineageMappers`,
+plus `mustacheTemplates` + `wizardData`) implement the same `Generator` interface as the
+built-ins, each writing under a target `outDir` so the drift gate covers their output.
 
 ## The drift gate
 
@@ -103,6 +110,18 @@ Reference projects that admit friction are believed. Real things this project hi
   as an *own* attr — the loader's required-attr check is own-only — so an abstract `template.prompt`
   that omits `textRef` fails to load. The prompt declarations were consolidated into two files but
   keep their per-node `payloadRef`/`format`.
+- **Lineage through a concrete enum loses the shared enum module.** `CouncilTurn.stance` could
+  say `extends: WizardOutput.stance`, but an enum that extends a *concrete* field gets its own
+  inlined enum instead of the shared `enums.ts` one. So enum fields keep extending the abstract
+  (`wizardStance`), and `lineageMappers` also pairs same-named fields that share an abstract.
+- **Lineage carries validators, and validators carry DB constraints.** Linking `Council`'s
+  verdict columns to `VerdictOutput` with `extends` would pull in `confidence`'s 0–1 validator,
+  which `meta verify --db` reads as a new CHECK constraint on `councils.verdict_confidence` that
+  the live table lacks. So those columns are still mapped by hand in `src/db/queries.ts`.
+- **Generated writes validate.** The stock `create`/`update` query verbs parse their input with
+  the insert/update schema. This app's writes don't, so adopting the verbs would start rejecting
+  rows written today (a client-supplied visitor cookie longer than `visitorId`'s 64 chars, for
+  example). The owned queries generator keeps reads only.
 - **A nested-value-object FQN codegen bug** in an earlier `@metaobjectsdev/codegen-ts` surfaced
   from this project and was fixed upstream (the `promptRender` FQN handling in 0.15.18).
 

@@ -16,6 +16,7 @@ import {
 } from "./db/queries";
 import { registerShareRoutes } from "./handlers/share";
 import { encodeCouncilFrame, type CouncilFrame } from "./web/generated/council-frames";
+import { CouncilRequestInsertSchema, type CouncilRequest } from "./db/generated/CouncilRequest";
 
 export interface Env {
   ASSETS: Fetcher;
@@ -137,16 +138,20 @@ async function runGates(
   return { ok: true, visitorId, setCookie };
 }
 
+// The question cap is declared once, as CouncilRequest.question's maxLength.
+const MAX_QUESTION_CHARS = CouncilRequestInsertSchema.shape.question.maxLength;
+if (MAX_QUESTION_CHARS === null) throw new Error("CouncilRequest.question must declare a maxLength");
+
 app.post("/api/council", async (c) => {
-  const body = await c.req
-    .json<{ question?: string; cfTurnstileToken?: string; wizardIds?: string[] }>()
-    .catch(() => ({}) as { question?: string; cfTurnstileToken?: string; wizardIds?: string[] });
+  const body = await c.req.json<Partial<CouncilRequest>>().catch((): Partial<CouncilRequest> => ({}));
   const question = (body.question ?? "").trim();
   const wizardIds = Array.isArray(body.wizardIds)
     ? body.wizardIds.filter((x): x is string => typeof x === "string")
     : undefined;
   if (!question) return c.json({ error: "Pose a question to the Guild." }, 400);
-  if (question.length > 600) return c.json({ error: "Brevity, mortal. Keep it under 600 characters." }, 400);
+  if (question.length > MAX_QUESTION_CHARS) {
+    return c.json({ error: `Brevity, mortal. Keep it under ${MAX_QUESTION_CHARS} characters.` }, 400);
+  }
 
   const clientIp = c.req.header("cf-connecting-ip") ?? undefined;
   const gate = await runGates(c, body.cfTurnstileToken, clientIp);

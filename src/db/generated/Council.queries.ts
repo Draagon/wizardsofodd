@@ -22,19 +22,6 @@ export async function findCouncilById(
     .limit(1);
   return council ?? null;
 }
-export async function listCouncils(
-  db: Db,
-  opts?: { limit?: number; offset?: number },
-): Promise<Council[]> {
-  let q = db.select().from(councils).$dynamic();
-  if (opts?.limit !== undefined) {
-    q = q.limit(opts.limit);
-  }
-  if (opts?.offset !== undefined) {
-    q = q.offset(opts.offset);
-  }
-  return q;
-}
 import { type CouncilTurn, councilTurns } from "./CouncilTurn";
 /** A Council with the CouncilTurn rows it owns (relationship.composition `turns`). */
 export interface CouncilWithTurns {

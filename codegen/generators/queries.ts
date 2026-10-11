@@ -13,12 +13,17 @@
 //                the inline `Db` type block above them to emit for another query builder.
 // use-when:      you want generated typed finders over Drizzle. Drop it if you hand-write
 //                all of your data access.
-// THIS COPY:     trimmed to READ-ONLY finders (a worked example of the "drop verbs"
+// THIS COPY:     trimmed to the READS this app makes (a worked example of the "drop verbs"
 //                customization). This app's writes are bespoke — hand-rolled inserts and
 //                updates in src/db/queries.ts over these generated row types — the same
 //                stance as the deliberately-absent routes generator (see
 //                metaobjects.config.ts). So create/update/delete, and the #203
 //                insertPreserving escape hatch that attaches to create, are all dropped.
+//                The stock create/update also PARSE their input against the insert/update
+//                schema, which this app's writes never did — adopting them would start
+//                rejecting rows written today. `list` is dropped too (nothing pages), and
+//                a composition PART (CouncilTurn) gets no file of its own: it is read
+//                through its aggregate root's find<Root>With<Parts> loader (added below).
 // emits:         <target>/<Entity>.queries.ts per source-backed object (any source.rdb kind,
 //                incl. read-only projections) — skipped for sourceless objects (incl. every
 //                object.value, source-less by value purity) and TPH subtypes (#248 R2).
@@ -50,7 +55,6 @@ import {
   type RenderContext,
   entityModuleSpecifier,
   renderFindByIdFn,
-  renderListFn,
   renderReverseFinderFns,
   reverseFksFor,
   getPkInfo,
@@ -112,7 +116,6 @@ import { ${varName}, type ${entityName} } from ${JSON.stringify(entityFileName)}
   const sections: Code[] = [
     literalImports,
     renderFindByIdFn(obj, ctx),
-    renderListFn(obj, ctx),
   ];
 
   // ADR-0038 — reverse-relationship navigation as explicit FK finders. One
@@ -238,7 +241,26 @@ export interface QueriesFileOpts {
 // loadable value ever has hasAnyRdbSource === true). TPH subtypes emit no
 // standalone queries file either — their per-subtype CRUD helpers live in the
 // discriminator base's queries file (which targets the single shared table).
-const skipNonQueryable = (e: MetaObject): boolean => hasAnyRdbSource(e) && !isTphSubtype(e);
+const skipNonQueryable = (e: MetaObject): boolean =>
+  hasAnyRdbSource(e) && !isTphSubtype(e) && !isCompositionPart(e);
+
+// OWNED: an entity another entity composes (`relationship.composition`, cardinality
+// many) is a PART of that aggregate — it is loaded through the root's
+// find<Root>With<Parts>, so a standalone queries file for it would only be dead
+// code (and the stock findById on a composite key matches on its first column only).
+function isCompositionPart(e: MetaObject): boolean {
+  const root = e.root();
+  return root.children().some(
+    (owner) =>
+      isMetaObject(owner) &&
+      owner !== e &&
+      owner.relationships().some((rel) => {
+        if (rel.subType !== RELATIONSHIP_SUBTYPE_COMPOSITION || rel.cardinality !== "many") return false;
+        const { node } = resolveObjectRef(root, rel.objectRef ?? "", owner.package ?? owner.fileDefaultPackage ?? "");
+        return node === e;
+      }),
+  );
+}
 
 export const queriesFile = function queriesFile(opts?: QueriesFileOpts): Generator {
   const userFilter = opts?.filter;
@@ -249,6 +271,9 @@ export const queriesFile = function queriesFile(opts?: QueriesFileOpts): Generat
   const generator: Generator = {
     name: "queries-file",
     filter,
+    // Sole producer of *.queries.ts: when an entity stops getting one (e.g. it
+    // becomes a composition part), the run removes the untouched old file.
+    orphanPolicy: { owns: (relPath) => relPath.endsWith(".queries.ts") },
     generate: perEntity(async (entity, ctx) => {
       if (!ctx.renderContext) {
         throw new Error("queries-file: renderContext is required (provided by runGen)");

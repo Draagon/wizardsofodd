@@ -1,23 +1,18 @@
 import { useCallback, useReducer } from "react";
 import { parseSseStream } from "../lib/sse-parser";
 
-import type { WizardOutput } from "../../db/generated/WizardOutput";
 import type { VerdictOutput } from "../../db/generated/VerdictOutput";
+import type { CouncilRequest } from "../../db/generated/CouncilRequest";
+import type { WizardFramePayload } from "../../db/generated/WizardFramePayload";
+import type { ErrorFramePayload } from "../../db/generated/ErrorFramePayload";
 import { toCouncilFrame, type CouncilFrame } from "../generated/council-frames";
 
-// SSE event payload shapes — sourced directly from the codegen'd row types so
-// the hook, the SSR share-page renderer, and the DB queries all speak the same
-// shape (post the codegen-ts $type<RefName[]>() + field.enum literal patches).
-export type WizardTake = WizardOutput;
+// SSE event payload shapes — sourced directly from the codegen'd types so the
+// hook, the SSR share-page renderer, and the DB queries all speak the same shape.
 export type Verdict = VerdictOutput;
 
-export interface WizardTurn {
-  kind: "wizard" | "error";
-  wizardId: string;
-  wizardName: string;
-  take?: WizardTake;
-  reason?: string;
-}
+/** One council turn as the UI renders it: a `wizard` or `error` frame's payload, tagged by kind. */
+export type WizardTurn = ({ kind: "wizard" } & WizardFramePayload) | ({ kind: "error" } & ErrorFramePayload);
 
 export type StreamStatus = "idle" | "streaming" | "complete" | "error";
 
@@ -57,14 +52,14 @@ export function reducer(state: StreamState, action: StreamAction): StreamState {
       if (state.slug === null) return state;
       return {
         ...state,
-        wizardTurns: [...state.wizardTurns, { kind: "wizard", wizardId: frame.data.wizardId, wizardName: frame.data.wizardName, take: frame.data.take }],
+        wizardTurns: [...state.wizardTurns, { kind: "wizard", ...frame.data }],
       };
     }
     case "error": {
       if (state.slug === null) return state;
       return {
         ...state,
-        wizardTurns: [...state.wizardTurns, { kind: "error", wizardId: frame.data.wizardId, wizardName: frame.data.wizardName, reason: frame.data.reason }],
+        wizardTurns: [...state.wizardTurns, { kind: "error", ...frame.data }],
       };
     }
     case "verdict": {
@@ -89,10 +84,7 @@ export function useCouncilStream() {
   const start = useCallback(async (question: string, turnstileToken: string, wizardIds?: string[]) => {
     dispatch({ type: "reset" });
     try {
-      const payload: { question: string; cfTurnstileToken: string; wizardIds?: string[] } = {
-        question,
-        cfTurnstileToken: turnstileToken,
-      };
+      const payload: CouncilRequest = { question, cfTurnstileToken: turnstileToken };
       if (wizardIds && wizardIds.length > 0) payload.wizardIds = wizardIds;
       const res = await fetch("/api/council", {
         method: "POST",

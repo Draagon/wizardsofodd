@@ -30,8 +30,7 @@ describe("useCouncilStream reducer", () => {
       },
     }));
     expect(s.wizardTurns).toHaveLength(1);
-    expect(s.wizardTurns[0]!.kind).toBe("wizard");
-    expect(s.wizardTurns[0]!.take?.takeMarkdown).toBe("ship it");
+    expect(s.wizardTurns[0]).toMatchObject({ kind: "wizard", take: { takeMarkdown: "ship it" } });
   });
 
   it("appends error turns on error frame", () => {
@@ -41,8 +40,7 @@ describe("useCouncilStream reducer", () => {
       data: { wizardId: "vexil", wizardName: "Vexil", reason: "Riddle unparseable." },
     }));
     expect(s.wizardTurns).toHaveLength(1);
-    expect(s.wizardTurns[0]!.kind).toBe("error");
-    expect(s.wizardTurns[0]!.reason).toBe("Riddle unparseable.");
+    expect(s.wizardTurns[0]).toMatchObject({ kind: "error", reason: "Riddle unparseable." });
   });
 
   it("records the verdict on verdict frame", () => {

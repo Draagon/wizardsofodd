@@ -27,6 +27,7 @@ import { wizardData } from "./src/codegen/wizard-data-generator";
 import { wizardRegistry } from "./src/codegen/wizard-registry-generator";
 import { structuredCompletion } from "./src/codegen/structured-completion-generator";
 import { sseFrames } from "./src/codegen/sse-frames-generator";
+import { lineageMappers } from "./src/codegen/lineage-mappers-generator";
 import { wizardsofoddProvider } from "./src/codegen/wizardsofodd-provider";
 
 // Cloudflare Worker target: SQLite dialect (works directly with drizzle-orm/d1).
@@ -104,5 +105,12 @@ export default defineConfig({
     wizardRegistry(), // → personas target (registry.ts)
     structuredCompletion(), // → llm target (toolcalls.ts)
     sseFrames(), // → web target (council-frames.ts)
+    // Field-lineage mappers (→ default target, <Target>.lineage.ts): the copies
+    // between WizardOutput and the objects whose fields `extends` it. Listed
+    // explicitly so only the mappers the app actually calls are emitted.
+    lineageMappers([
+      { from: "WizardOutput", to: "CouncilTurn", reverse: true }, // persist a take / rehydrate it
+      { from: "WizardOutput", to: "TurnLens" }, // project a prior take into the prompt payload
+    ]),
   ],
 });

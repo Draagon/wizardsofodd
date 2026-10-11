@@ -1,8 +1,9 @@
 {
   "src/db/generated/Council.names.ts": "7639829ce25c2652fd3cb43b8a8715a524436ac589e76f4a50ab4167a71e1e3d",
-  "src/db/generated/Council.queries.ts": "094899bc9c57f32d088ffa21c062cf73856aca92027f0e5e5b9c287b53f1723e",
+  "src/db/generated/Council.queries.ts": "98c06e2f87cabd7d46e3deb51c61c5ecf78f4af279585fbdb1f93f96240b7bb7",
   "src/db/generated/Council.ts": "95e126e91ac1796740341f5841d65be3ee5d67c3cd5aa49f9f5b93be6217bcb3",
   "src/db/generated/CouncilFramePayload.ts": "171af1600fb74ed69cdcd8ca4991b67327b9b005d446ae4e0fe4edde93b13b3f",
+  "src/db/generated/CouncilTurn.lineage.ts": "8b1eea473344ff2113c94464f528a9f683aa306971f87feaff3f36ad7c6a08f4",
   "src/db/generated/CouncilTurn.names.ts": "dce73f3e62ba305d1101ab21ee9467a61cf89fb9c4779998b4649b8a4de46b55",
   "src/db/generated/CouncilTurn.queries.ts": "b66967acfed68e566c71b53593627548c480d707a9ac569a68d3062d7aea409d",
   "src/db/generated/CouncilTurn.ts": "8422492eb05cdad1d2d64eb84ddc3032be58bc19542ec1c4156d5a2799f57a30",
@@ -12,6 +13,7 @@
   "src/db/generated/RivalLens.ts": "f826cdfa5ced2d5bb94ae31589ad696e7471939bc7702923ab00c1bd77dc0975",
   "src/db/generated/RosterLens.ts": "c30d3764d5af1ffc3224d6ed38a3bbb78b59c3b0dffeed38f2147964f35fe408",
   "src/db/generated/SourceLens.ts": "881870fb987787b3007f80548a7e72a4bf78e2c4d067367bd52922f3078c7183",
+  "src/db/generated/TurnLens.lineage.ts": "22fb0b7a6b9a01ae0b119899e1d013ae55975cb8d22efe8d72f3c40b49a15c18",
   "src/db/generated/TurnLens.ts": "1ad8842a65cae915b022667f693cd2a0ea2539b86e40767bbfea1bdcb6210313",
   "src/db/generated/VerdictFramePayload.ts": "eb0318818c505197d176ecd5d589249fb0131de2c9e305ff7decbd44c7d4c34d",
   "src/db/generated/VerdictOutput.ts": "d363ad89720c22c05a467bc006a9b6dc6eca9bac559d47c98c70f7de173d1c63",
@@ -28,6 +30,6 @@
   "src/personas/generated/registry.ts": "1389f50d593cc3bded2dc61bc66acc57b791f6e33d4564017ef4f5f6324e7019",
   "src/personas/generated/wizards.ts": "45c28aea4862cf75651f00581c8a19c2507b14a72651e89df622a83b72a88ce9",
   "src/render/generated/prompts.ts": "773274d07c04940087f8f6d987b983638e32d5d8a1289a14941f067f1b5a636e",
-  "src/render/generated/templates.ts": "1ffb203e31b46e2ebb83ab5746c6bcba961b47bee82436b6df1f798fc95390eb",
-  "src/web/generated/council-frames.ts": "182411b74cac93722d380a9417b647f4972be6a1f585eb23f31c618e9d3f81c2"
+  "src/render/generated/templates.ts": "7511ae43e21c4d6f938783af98d04c218322e96358fb0e2d1f1b74a2ead4f7c8",
+  "src/web/generated/council-frames.ts": "6691c8b8cbcefe6738660dfac994c459c18f7217a3e2deebcf0b8b64d5613966"
 }

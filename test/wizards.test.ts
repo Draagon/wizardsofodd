@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { WIZARDS } from "../src/personas/generated/wizards";
 import { WIZARD_REGISTRY } from "../src/personas/generated/registry";
-import { templateProvider } from "../src/render/template-provider";
+import { templateProvider } from "../src/render/generated/templates";
 
 describe("WIZARDS (generated from data/wizards/*.yaml)", () => {
   it("has 10 entries", () => {

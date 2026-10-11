@@ -1,15 +1,14 @@
 import { eq } from "drizzle-orm";
 import { schema, type Db } from "./client";
 import { newSlug } from "./slug";
-import type { WizardOutput } from "./generated/WizardOutput";
+import type { WizardFramePayload } from "./generated/WizardFramePayload";
+import type { ErrorFramePayload } from "./generated/ErrorFramePayload";
 import type { VerdictOutput } from "./generated/VerdictOutput";
-// Consume the codegen'd typed finders — including the ADR-0038 reverse finder —
-// rather than re-hand-rolling the same selects. The bespoke writes below stay
-// hand-written, but OVER these generated row types (Council / CouncilTurn).
-import { findCouncilById } from "./generated/Council.queries";
-import { findCouncilTurnsByCouncil } from "./generated/CouncilTurn.queries";
+// Reads are generated (findCouncilWithTurns in ./generated/Council.queries, from
+// Council's `turns` composition). The bespoke writes below stay hand-written,
+// but OVER the generated row types (Council / CouncilTurn).
 import type { Council } from "./generated/Council";
-import type { CouncilTurn } from "./generated/CouncilTurn";
+import { councilTurnFieldsFromWizardOutput } from "./generated/CouncilTurn.lineage";
 import { CouncilStatusEnum } from "./generated/Council";
 
 const { councils, councilTurns } = schema;
@@ -43,19 +42,11 @@ export async function insertCouncil(db: Db, args: InsertCouncilArgs): Promise<st
   throw new Error("unreachable");
 }
 
-export interface RecordWizardTurnArgs {
-  ordinal: number;
-  wizardId: string;
-  wizardName: string;
-  take: WizardOutput;
-}
+/** A `wizard` stream frame's payload, plus the turn's position in the council. */
+export type RecordWizardTurnArgs = WizardFramePayload & { ordinal: number };
 
-export interface RecordErrorTurnArgs {
-  ordinal: number;
-  wizardId: string;
-  wizardName: string;
-  reason: string;
-}
+/** An `error` stream frame's payload, plus the turn's position in the council. */
+export type RecordErrorTurnArgs = ErrorFramePayload & { ordinal: number };
 
 /** Recording any turn advances the council from 'pending' to 'partial'. */
 async function advanceCouncilToPartial(db: Db, councilId: string): Promise<void> {
@@ -71,12 +62,7 @@ export async function recordWizardTurn(db: Db, councilId: string, t: RecordWizar
     wizardId: t.wizardId,
     wizardName: t.wizardName,
     kind: "wizard",
-    stance: t.take.stance,
-    takeMarkdown: t.take.takeMarkdown,
-    oneLineSummary: t.take.oneLineSummary,
-    confidence: t.take.confidence,
-    keyClaims: t.take.keyClaims ?? [],
-    citations: t.take.citations ?? null,
+    ...councilTurnFieldsFromWizardOutput(t.take),
   });
   await advanceCouncilToPartial(db, councilId);
 }
@@ -128,33 +114,6 @@ export async function setCouncilError(db: Db, councilId: string): Promise<void> 
     .update(councils)
     .set({ status: "error", completedAt: Date.now() })
     .where(eq(councils.id, councilId));
-}
-
-export interface CouncilWithTurns {
-  council: Council;
-  turns: CouncilTurn[];
-}
-
-export async function getCouncilWithTurns(db: Db, id: string): Promise<CouncilWithTurns | null> {
-  const council = await findCouncilById(db, id);
-  if (!council) return null;
-  // findCouncilTurnsByCouncil is the generated ADR-0038 reverse finder (from the
-  // CouncilTurn→Council FK). It doesn't order, so sort by ordinal for display.
-  const turns = await findCouncilTurnsByCouncil(db, id);
-  turns.sort((a, b) => a.ordinal - b.ordinal);
-  return { council, turns };
-}
-
-/** Rehydrate the structured WizardOutput from a turn row. JSON columns are already decoded by Drizzle. */
-export function turnToWizardOutput(turn: CouncilTurn): WizardOutput {
-  return {
-    stance: turn.stance,
-    takeMarkdown: turn.takeMarkdown,
-    oneLineSummary: turn.oneLineSummary,
-    confidence: turn.confidence,
-    keyClaims: turn.keyClaims,
-    ...(turn.citations ? { citations: turn.citations } : {}),
-  };
 }
 
 /** Rebuild a VerdictOutput from a council row's verdict columns (null → absent/empty). */

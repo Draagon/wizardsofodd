@@ -3,9 +3,9 @@ import { describe, it, expect } from "vitest";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "../src/db/client";
 import {
-  insertCouncil, recordWizardTurn, recordErrorTurn, finalizeCouncil,
-  setCouncilError, getCouncilWithTurns,
+  insertCouncil, recordWizardTurn, recordErrorTurn, finalizeCouncil, setCouncilError,
 } from "../src/db/queries";
+import { findCouncilWithTurns } from "../src/db/generated/Council.queries";
 import type { WizardOutput } from "../src/db/generated/WizardOutput";
 import type { VerdictOutput } from "../src/db/generated/VerdictOutput";
 
@@ -116,7 +116,7 @@ describe("queries", () => {
     expect(row.completedAt).toBeGreaterThan(0);
   });
 
-  it("getCouncilWithTurns returns ordered turns + the council", async () => {
+  it("findCouncilWithTurns returns ordered turns + the council", async () => {
     const db = getDb(env);
     const id = await insertCouncil(db, { visitorId: "v-test", question: "ordered?" });
     await recordWizardTurn(db, id, {
@@ -127,14 +127,14 @@ describe("queries", () => {
       ordinal: 1, wizardId: "grumbel", wizardName: "Grumbel the Overcaffeinated",
       take: { ...FAKE_WIZARD_OUTPUT, takeMarkdown: "A" },
     });
-    const got = await getCouncilWithTurns(db, id);
+    const got = await findCouncilWithTurns(db, id);
     expect(got).not.toBeNull();
     expect(got!.council.question).toBe("ordered?");
     expect(got!.turns.map((t) => t.takeMarkdown)).toEqual(["A", "B"]);
   });
 
-  it("getCouncilWithTurns returns null for unknown id", async () => {
+  it("findCouncilWithTurns returns null for unknown id", async () => {
     const db = getDb(env);
-    expect(await getCouncilWithTurns(db, "nonexistent")).toBeNull();
+    expect(await findCouncilWithTurns(db, "nonexistent")).toBeNull();
   });
 });

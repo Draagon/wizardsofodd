@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { renderShareHtml } from "../src/render/share-html";
-import type { CouncilWithTurns } from "../src/db/queries";
+import type { CouncilWithTurns } from "../src/db/generated/Council.queries";
 
 function fakeCouncil(overrides?: Partial<CouncilWithTurns>): CouncilWithTurns {
   return {

@@ -1,9 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { env } from "cloudflare:test";
 import { getDb } from "../src/db/client";
-import {
-  insertCouncil, finalizeCouncil, getCouncilWithTurns,
-} from "../src/db/queries";
+import { insertCouncil, finalizeCouncil } from "../src/db/queries";
+import { findCouncilWithTurns } from "../src/db/generated/Council.queries";
 import type { VerdictOutput } from "../src/db/generated/VerdictOutput";
 
 describe("finalizeCouncil persists the W3 verdict fields", () => {
@@ -21,7 +20,7 @@ describe("finalizeCouncil persists the W3 verdict fields", () => {
       verifyNote: "check the numbers",
     };
     await finalizeCouncil(db, slug, verdict);
-    const row = await getCouncilWithTurns(db, slug);
+    const row = await findCouncilWithTurns(db, slug);
     expect(row?.council.verdictAgreements).toEqual(["a1", "a2"]);
     expect(row?.council.verdictSplits).toEqual(["s1"]);
     expect(row?.council.verdictVerifyNote).toBe("check the numbers");
@@ -40,7 +39,7 @@ describe("finalizeCouncil persists the W3 verdict fields", () => {
       evidenceQuality: "strong",
     };
     await finalizeCouncil(db, slug, verdict);
-    const row = await getCouncilWithTurns(db, slug);
+    const row = await findCouncilWithTurns(db, slug);
     expect(row?.council.verdictAgreements).toBeNull();
     expect(row?.council.verdictSplits).toBeNull();
     expect(row?.council.verdictVerifyNote).toBeNull();

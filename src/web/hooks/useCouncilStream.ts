@@ -1,12 +1,9 @@
 import { useCallback, useReducer } from "react";
-import { parseSseStream, toTypedFrame } from "../lib/sse-parser";
+import { parseSseStream } from "../lib/sse-parser";
 
 import type { WizardOutput } from "../../db/generated/WizardOutput";
 import type { VerdictOutput } from "../../db/generated/VerdictOutput";
-import {
-  COUNCIL_EVENTS,
-  type CouncilFrame,
-} from "../generated/council-frames";
+import { toCouncilFrame, type CouncilFrame } from "../generated/council-frames";
 
 // SSE event payload shapes — sourced directly from the codegen'd row types so
 // the hook, the SSR share-page renderer, and the DB queries all speak the same
@@ -44,9 +41,6 @@ export type StreamAction =
   | { type: "frame"; frame: CouncilFrame }
   | { type: "streamError"; message: string }
   | { type: "reset" };
-
-/** ReadonlySet of declared event names (the keys of COUNCIL_EVENTS). */
-const DECLARED_EVENTS: ReadonlySet<string> = new Set(Object.values(COUNCIL_EVENTS));
 
 export function reducer(state: StreamState, action: StreamAction): StreamState {
   if (action.type === "reset") return initialState;
@@ -110,9 +104,9 @@ export function useCouncilStream() {
         return;
       }
       for await (const raw of parseSseStream(res.body)) {
-        const typed = toTypedFrame(raw, DECLARED_EVENTS);
-        if (typed === null) continue; // forward-compat: skip unknown events
-        dispatch({ type: "frame", frame: typed });
+        const frame = toCouncilFrame(raw);
+        if (frame === null) continue; // forward-compat: skip unknown events
+        dispatch({ type: "frame", frame });
       }
     } catch (err) {
       dispatch({ type: "streamError", message: (err as Error).message ?? "Stream failed" });

@@ -69,3 +69,7 @@ metadata:
               required: false
           - identity.primary:
               fields: [id]
+          - relationship.composition:
+              name: turns
+              objectRef: CouncilTurn
+              cardinality: many

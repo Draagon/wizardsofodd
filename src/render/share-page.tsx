@@ -1,7 +1,9 @@
 import { WizardCard } from "../web/components/WizardCard";
 import { VerdictCard } from "../web/components/VerdictCard";
 import { WIZARDS } from "../personas/generated/wizards";
-import { councilVerdict, turnToWizardOutput, type CouncilWithTurns } from "../db/queries";
+import { councilVerdict } from "../db/queries";
+import { wizardOutputFromCouncilTurn } from "../db/generated/CouncilTurn.lineage";
+import type { CouncilWithTurns } from "../db/generated/Council.queries";
 import type { WizardTurn, Verdict } from "../web/hooks/useCouncilStream";
 import { CouncilStatusEnum } from "../db/generated/Council";
 
@@ -16,7 +18,7 @@ export function SharePage({ data }: Props) {
   const toRecord = (t: CouncilWithTurns["turns"][number]): WizardTurn =>
     t.kind === "error"
       ? { kind: "error", wizardId: t.wizardId, wizardName: t.wizardName, reason: t.takeMarkdown }
-      : { kind: "wizard", wizardId: t.wizardId, wizardName: t.wizardName, take: turnToWizardOutput(t) };
+      : { kind: "wizard", wizardId: t.wizardId, wizardName: t.wizardName, take: wizardOutputFromCouncilTurn(t) };
 
   const records = turns.map(toRecord);
   const verdict: Verdict | null =

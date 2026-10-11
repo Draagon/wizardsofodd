@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { SharePage } from "./share-page";
-import type { CouncilWithTurns } from "../db/queries";
+import type { CouncilWithTurns } from "../db/generated/Council.queries";
 import { CouncilStatusEnum } from "../db/generated/Council";
 
 const ESCAPE_RE = /[&<>"']/g;

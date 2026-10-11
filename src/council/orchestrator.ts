@@ -1,10 +1,8 @@
-import type { SystemBlock, AnthropicMessage } from "../llm/anthropic";
+import type { SystemBlock } from "../llm/anthropic";
 import type { SearchResult } from "../llm/web-search";
 import { WIZARD_REGISTRY } from "../personas/generated/registry";
-import { templateProvider } from "../render/template-provider";
+import { templateProvider } from "../render/generated/templates";
 import type { WizardUserPayload } from "../db/generated/WizardUserPayload";
-import type { WizardOutput } from "../db/generated/WizardOutput";
-import type { VerdictOutput } from "../db/generated/VerdictOutput";
 import {
   buildWizardSystem,
   buildVerdictSystem,
@@ -14,16 +12,15 @@ import {
   toSourceLens,
   type PriorTurn,
 } from "./prompts";
-import {
-  callEmitWizardTake,
-  callEmitVerdict,
-  type ToolcallParams,
-} from "../llm/generated/toolcalls";
+import { callEmitWizardTake, callEmitVerdict } from "../llm/generated/toolcalls";
+import type { CouncilFrameOf } from "../web/generated/council-frames";
 
-export type CouncilEvent =
-  | { type: "wizard"; wizardId: string; wizardName: string; take: WizardOutput }
-  | { type: "error"; wizardId: string; wizardName: string; reason: string }
-  | { type: "verdict"; verdict: VerdictOutput };
+/**
+ * What convene() yields: the council's own stream frames (the generated union
+ * from metaobjects/sse-frames/), so the Worker forwards them to the wire as-is.
+ * The Worker adds the `council` frame before and the `done` frame after.
+ */
+export type CouncilEvent = CouncilFrameOf<"wizard" | "error" | "verdict">;
 
 /** Optional per-question search. Should never throw — return [] on failure. */
 export type SearchFn = (query: string) => Promise<SearchResult[]>;
@@ -46,24 +43,8 @@ export interface ConveneParams {
   model?: string;
 }
 
-/**
- * Project ConveneParams + (system, messages) into the ToolcallParams shape the
- * codegen'd wrappers expect. Strips undefined optionals so the spread inside
- * the wrappers stays exactOptionalPropertyTypes-clean.
- */
-function toolcallParams(
-  params: { apiKey: string; fetchImpl?: typeof fetch; model?: string },
-  system: string | SystemBlock[],
-  messages: AnthropicMessage[],
-): ToolcallParams {
-  const out: ToolcallParams = { apiKey: params.apiKey, system, messages };
-  if (params.fetchImpl !== undefined) out.fetchImpl = params.fetchImpl;
-  if (params.model !== undefined) out.model = params.model;
-  return out;
-}
-
 export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEvent> {
-  const { question, search } = params;
+  const { question, search, apiKey, fetchImpl, model } = params;
   const registry = params.registry ?? WIZARD_REGISTRY;
   const all = registry.map((e) => e.wizard);
   const prior: PriorTurn[] = [];
@@ -117,17 +98,15 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
       };
       const userContent = entry.renderUser(userPayload, templateProvider).trimEnd();
 
-      const take = await callEmitWizardTake(
-        toolcallParams(params, wizardSystem, [{ role: "user", content: userContent }]),
-      );
+      const take = await callEmitWizardTake({
+        apiKey, fetchImpl, model, system: wizardSystem, messages: [{ role: "user", content: userContent }],
+      });
       prior.push({ persona: wizard, take });
-      yield { type: "wizard", wizardId: wizard.id, wizardName: name, take };
+      yield { event: "wizard", data: { wizardId: wizard.id, wizardName: name, take } };
     } catch {
       yield {
-        type: "error",
-        wizardId: wizard.id,
-        wizardName: name,
-        reason: `${wizard.name} is lost in thought and does not answer.`,
+        event: "error",
+        data: { wizardId: wizard.id, wizardName: name, reason: `${wizard.name} is lost in thought and does not answer.` },
       };
     }
   }
@@ -138,8 +117,8 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
   // "nobody answered" verdict instead, skipping the LLM round-trip.
   if (prior.length === 0) {
     yield {
-      type: "verdict",
-      verdict: {
+      event: "verdict",
+      data: { verdict: {
         stance: "unanswerable",
         confidence: 0,
         takeMarkdown:
@@ -149,7 +128,7 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
         agreements: [],
         splits: [],
         verifyNote: "",
-      },
+      } },
     };
     return;
   }
@@ -157,8 +136,8 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
   const vSys = buildVerdictSystem(all);
   const vMsgs = buildVerdictMessages(question, prior);
   try {
-    const verdict = await callEmitVerdict(toolcallParams(params, vSys, vMsgs));
-    yield { type: "verdict", verdict };
+    const verdict = await callEmitVerdict({ apiKey, fetchImpl, model, system: vSys, messages: vMsgs });
+    yield { event: "verdict", data: { verdict } };
   } catch {
     // A malformed verdict is absorbed by emitVerdict's canned fallback inside
     // the wrapper, so anything reaching here is a transport/API failure (rate
@@ -166,8 +145,8 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
     // stream — and worded distinctly from the fallback's "could not converge"
     // deliberation outcome, since the wizards' takes above are still valid.
     yield {
-      type: "verdict",
-      verdict: {
+      event: "verdict",
+      data: { verdict: {
         stance: "unanswerable",
         confidence: 0,
         takeMarkdown:
@@ -177,7 +156,7 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
         agreements: [],
         splits: [],
         verifyNote: "",
-      },
+      } },
     };
   }
 }

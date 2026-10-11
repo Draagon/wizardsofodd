@@ -1,19 +1,13 @@
-// Typed SSE-stream parser. Reads a ReadableStream<Uint8Array> body (from
-// `fetch().body`), buffers partial frames across chunk boundaries, yields
-// typed CouncilFrame objects.
-//
-// Frame shape — pulled from the codegen'd discriminated union (one arm per
-// template.streamFrame node under metaobjects/sse-frames/). Adding a new SSE
-// event = 2-file YAML drop + regen; this parser and the reducer pick up the
-// new arm automatically.
-
-export type { CouncilFrame, CouncilFrameEventName } from "../generated/council-frames";
-import type { CouncilFrame } from "../generated/council-frames";
+// SSE text-protocol parser. Reads a ReadableStream<Uint8Array> body (from
+// `fetch().body`), buffers partial frames across chunk boundaries, and yields
+// raw { event, data } frames. Narrowing a raw frame to the declared, typed
+// CouncilFrame union is the generated toCouncilFrame (src/web/generated/
+// council-frames.ts, from metaobjects/sse-frames/), so adding an SSE event
+// needs no change here.
 
 /**
  * Raw frame as it comes off the wire — `event` is still an arbitrary string
  * because a malicious or out-of-date server could send an unknown event name.
- * The reducer narrows to the typed CouncilFrame union by event-name switch.
  */
 export interface RawCouncilFrame {
   event: string;
@@ -57,17 +51,4 @@ function parseFrame(block: string): RawCouncilFrame | null {
     return null;
   }
   return { event: eventMatch[1]!.trim(), data };
-}
-
-/**
- * Narrow a raw frame to a typed CouncilFrame if its event-name is one of the
- * codegen'd declared events. Returns null for unknown events (forward-compat:
- * future servers may emit events this client doesn't yet know about).
- */
-export function toTypedFrame(raw: RawCouncilFrame, declared: ReadonlySet<string>): CouncilFrame | null {
-  if (!declared.has(raw.event)) return null;
-  // Wire-decoded JSON satisfies the declared shape by contract — the orchestrator
-  // emits via the typed sseFrame helper, so this assertion is the wire boundary
-  // (analogous to crossing a `fetch().json()` boundary).
-  return raw as CouncilFrame;
 }

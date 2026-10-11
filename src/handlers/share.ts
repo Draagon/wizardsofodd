@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { getDb } from "../db/client";
-import { getCouncilWithTurns } from "../db/queries";
+import { findCouncilWithTurns } from "../db/generated/Council.queries";
 import { renderShareHtml } from "../render/share-html";
 import { CouncilInsertSchema } from "../db/generated/Council";
 import type { Env } from "../index";
@@ -22,7 +22,7 @@ export function registerShareRoutes(app: Hono<{ Bindings: Env }>): void {
     const slug = slugParam.replace(/\.json$/, "");
     if (!isValidSlug(slug)) return c.text("Not found", 404);
     const db = getDb(c.env);
-    const data = await getCouncilWithTurns(db, slug);
+    const data = await findCouncilWithTurns(db, slug);
     if (!data) return c.text("Not found", 404);
     return c.json(data);
   });
@@ -31,7 +31,7 @@ export function registerShareRoutes(app: Hono<{ Bindings: Env }>): void {
     const slug = c.req.param("slug");
     if (!isValidSlug(slug)) return c.text("Not found", 404);
     const db = getDb(c.env);
-    const data = await getCouncilWithTurns(db, slug);
+    const data = await findCouncilWithTurns(db, slug);
     if (!data) return c.text("Not found", 404);
     const html = renderShareHtml(data);
     return c.html(html);

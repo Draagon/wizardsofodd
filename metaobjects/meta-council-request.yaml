@@ -1,0 +1,24 @@
+# CouncilRequest — the JSON body the SPA POSTs to /api/council to convene a
+# council. Both sides use the generated type, and the Worker reads its question
+# cap from question's maxLength. The Worker still checks the body by hand
+# (trimmed question, string-only wizardIds), so a malformed body keeps its
+# existing in-character 400 messages.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: CouncilRequest
+        children:
+          - field.string:
+              name: question
+              maxLength: 600
+              required: true
+          # Cloudflare Turnstile token from the client widget; the gate rejects a missing one.
+          - field.string:
+              name: cfTurnstileToken
+              required: false
+          # The visitor's chosen wizard ids; absent or empty means the default council.
+          - field.string:
+              name: wizardIds
+              isArray: true
+              required: false

@@ -15,12 +15,8 @@ import {
   setCouncilError,
 } from "./db/queries";
 import { registerShareRoutes } from "./handlers/share";
-import {
-  sseFrame,
-  COUNCIL_EVENTS,
-  type CouncilFrameEventName,
-  type CouncilFrameByEventName,
-} from "./web/generated/council-frames";
+import { encodeCouncilFrame, type CouncilFrame } from "./web/generated/council-frames";
+import { CouncilRequestInsertSchema, type CouncilRequest } from "./db/generated/CouncilRequest";
 
 export interface Env {
   ASSETS: Fetcher;
@@ -43,12 +39,6 @@ export interface Env {
 const app = new Hono<{ Bindings: Env }>();
 
 app.get("/api/health", (c) => c.json({ ok: true }));
-
-// Thin alias over the codegen'd sseFrame so the call sites read naturally
-// (`sse(...)`) while the wire shape stays driven by metaobjects/sse-frames/.
-function sse<E extends CouncilFrameEventName>(event: E, data: CouncilFrameByEventName[E]): string {
-  return sseFrame(event, data);
-}
 
 // Pull the woo_vid value out of a Cookie header that may contain other cookies,
 // e.g. "a=b; woo_vid=...; c=d".
@@ -148,16 +138,20 @@ async function runGates(
   return { ok: true, visitorId, setCookie };
 }
 
+// The question cap is declared once, as CouncilRequest.question's maxLength.
+const MAX_QUESTION_CHARS = CouncilRequestInsertSchema.shape.question.maxLength;
+if (MAX_QUESTION_CHARS === null) throw new Error("CouncilRequest.question must declare a maxLength");
+
 app.post("/api/council", async (c) => {
-  const body = await c.req
-    .json<{ question?: string; cfTurnstileToken?: string; wizardIds?: string[] }>()
-    .catch(() => ({}) as { question?: string; cfTurnstileToken?: string; wizardIds?: string[] });
+  const body = await c.req.json<Partial<CouncilRequest>>().catch((): Partial<CouncilRequest> => ({}));
   const question = (body.question ?? "").trim();
   const wizardIds = Array.isArray(body.wizardIds)
     ? body.wizardIds.filter((x): x is string => typeof x === "string")
     : undefined;
   if (!question) return c.json({ error: "Pose a question to the Guild." }, 400);
-  if (question.length > 600) return c.json({ error: "Brevity, mortal. Keep it under 600 characters." }, 400);
+  if (question.length > MAX_QUESTION_CHARS) {
+    return c.json({ error: `Brevity, mortal. Keep it under ${MAX_QUESTION_CHARS} characters.` }, 400);
+  }
 
   const clientIp = c.req.header("cf-connecting-ip") ?? undefined;
   const gate = await runGates(c, body.cfTurnstileToken, clientIp);
@@ -173,7 +167,9 @@ app.post("/api/council", async (c) => {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
-      controller.enqueue(encoder.encode(sse(COUNCIL_EVENTS.council, { id: slug })));
+      // Every frame on the wire is a generated CouncilFrame (metaobjects/sse-frames/).
+      const send = (frame: CouncilFrame) => controller.enqueue(encoder.encode(encodeCouncilFrame(frame)));
+      send({ event: "council", data: { id: slug } });
       try {
         const searchClient = (q: string) => search({
           query: q,
@@ -183,37 +179,16 @@ app.post("/api/council", async (c) => {
         });
         let ordinal = 0;
         const registry = selectRegistry(WIZARD_REGISTRY, wizardIds);
-        for await (const ev of convene({ question, apiKey, model, search: searchClient, registry })) {
-          if (ev.type === "wizard") {
-            ordinal += 1;
-            await recordWizardTurn(db, slug, {
-              ordinal,
-              wizardId: ev.wizardId,
-              wizardName: ev.wizardName,
-              take: ev.take,
-            });
-            controller.enqueue(encoder.encode(sse(COUNCIL_EVENTS.wizard, {
-              wizardId: ev.wizardId,
-              wizardName: ev.wizardName,
-              take: ev.take,
-            })));
-          } else if (ev.type === "error") {
-            ordinal += 1;
-            await recordErrorTurn(db, slug, {
-              ordinal,
-              wizardId: ev.wizardId,
-              wizardName: ev.wizardName,
-              reason: ev.reason,
-            });
-            controller.enqueue(encoder.encode(sse(COUNCIL_EVENTS.error, {
-              wizardId: ev.wizardId,
-              wizardName: ev.wizardName,
-              reason: ev.reason,
-            })));
-          } else if (ev.type === "verdict") {
-            await finalizeCouncil(db, slug, ev.verdict);
-            controller.enqueue(encoder.encode(sse(COUNCIL_EVENTS.verdict, { verdict: ev.verdict })));
+        for await (const frame of convene({ question, apiKey, model, search: searchClient, registry })) {
+          // Persist first, then forward the same frame to the client.
+          if (frame.event === "wizard") {
+            await recordWizardTurn(db, slug, { ordinal: ++ordinal, ...frame.data });
+          } else if (frame.event === "error") {
+            await recordErrorTurn(db, slug, { ordinal: ++ordinal, ...frame.data });
+          } else {
+            await finalizeCouncil(db, slug, frame.data.verdict);
           }
+          send(frame);
         }
       } catch (err) {
         console.error("[council] stream error", err);
@@ -222,13 +197,12 @@ app.post("/api/council", async (c) => {
         // stream-level failure path uses sentinel values so the wire shape stays
         // consistent with per-wizard errors and the React reducer doesn't need a
         // separate code path.
-        controller.enqueue(encoder.encode(sse(COUNCIL_EVENTS.error, {
-          wizardId: "_stream",
-          wizardName: "The Guild",
-          reason: "The tower went dark unexpectedly.",
-        })));
+        send({
+          event: "error",
+          data: { wizardId: "_stream", wizardName: "The Guild", reason: "The tower went dark unexpectedly." },
+        });
       } finally {
-        controller.enqueue(encoder.encode(sse(COUNCIL_EVENTS.done, { ok: true })));
+        send({ event: "done", data: { ok: true } });
         controller.close();
       }
     },

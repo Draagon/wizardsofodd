@@ -24,6 +24,6 @@ export default defineConfig({
   test: {
     name: "workers",
     setupFiles: ["./test/setup.ts"],
-    exclude: ["test/web/**", "node_modules/**"],
+    exclude: ["test/web/**", "test/codegen/**", "node_modules/**"],
   },
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { templateProvider } from "../src/render/template-provider";
+import { templateProvider } from "../src/render/generated/templates";
 import { WIZARDS } from "../src/personas/generated/wizards";
 
 describe("templateProvider", () => {

@@ -22,11 +22,12 @@ disposable artifact. This app is a working proof: **one spine → many outputs, 
 
 | Metadata (`metaobjects/`, `data/`) | Generator | Generated artifact | Consumed by |
 |---|---|---|---|
-| `object.entity` (Council, CouncilTurn) — `source.rdb`, identity, `field.enum`, `field.object` | `entityFile` / `queriesFile` | Drizzle D1 tables + Zod + typed finders (`src/db/generated/`) | `src/db/queries.ts` |
+| `object.entity` (Council, CouncilTurn) — `source.rdb`, identity, `field.enum`, `field.object`, `relationship.composition` | `entityFile` / `queriesFile` | Drizzle D1 tables + Zod + typed finders + the `findCouncilWithTurns` aggregate read (`src/db/generated/`) | `src/db/queries.ts`, share routes |
+| field-level `extends: <Source>.<field>` lineage | `lineageMappers` (custom) | typed copies between `WizardOutput` and its descendants, and the public `SharedCouncil` view of a council row (`src/db/generated/*.lineage.ts`) | persistence, share page + JSON, prompt payloads |
 | `object.value` payloads + `template.prompt` | `promptRender` | typed render handles (`src/render/generated/prompts.ts`) | `src/council/prompts.ts` |
-| Mustache text (`data/templates/`) | `mustacheTemplates` (custom) | inlined template map (`.../templates.ts`) | the render provider |
+| Mustache text (`data/templates/`) | `mustacheTemplates` (custom) | inlined template map + its `templateProvider` (`.../templates.ts`) | every render call |
 | `template.toolcall` | `structuredCompletion` (custom) | Anthropic `tool_use` wrappers + retry/fallback ladder (`src/llm/generated/toolcalls.ts`) | orchestrator |
-| `template.streamFrame` (a **project-local subtype**) | `sseFrames` (custom) | `CouncilFrame` discriminated union + typed `sse()` (`src/web/generated/council-frames.ts`) | Worker **and** React reducer |
+| `template.streamFrame` (a **project-local subtype**) | `sseFrames` (custom) | `CouncilFrame` discriminated union + `encodeCouncilFrame` / `toCouncilFrame` (`src/web/generated/council-frames.ts`) | orchestrator, Worker **and** React reducer |
 | Wizard instance data (`data/wizards/`) | `wizardData` + `wizardRegistry` (custom) | typed roster + render registry (`src/personas/generated/`) | orchestrator + gallery |
 
 The wiring is one file: [`metaobjects.config.ts`](metaobjects.config.ts). Every generator
@@ -104,8 +105,8 @@ registering its own vocabulary, strict-provenance-clean (ADR-0023):
 - an Anthropic `@retryReminder` attr **added to** the core `template.toolcall` subtype, with the
   structured fallback payload riding the registered `attr.properties` bag.
 
-Three small custom generators (`sseFrames`, `structuredCompletion`, `wizardRegistry`) implement
-the same `Generator` interface as the built-ins.
+Small custom generators (`sseFrames`, `structuredCompletion`, `wizardRegistry`, `wizardData`,
+`mustacheTemplates`, `lineageMappers`) implement the same `Generator` interface as the built-ins.
 
 ## Add a wizard — data files, zero TypeScript
 

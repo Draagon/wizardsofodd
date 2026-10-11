@@ -96,19 +96,19 @@ describe("convene", () => {
       events.push(ev);
     }
 
-    const wizardEvents = events.filter((e) => e.type === "wizard");
+    const wizardEvents = events.filter((e) => e.event === "wizard");
     expect(wizardEvents).toHaveLength(10);
-    expect(wizardEvents.map((e) => (e as Extract<CouncilEvent, { type: "wizard" }>).wizardId)).toEqual(
+    expect(wizardEvents.map((e) => (e as Extract<CouncilEvent, { event: "wizard" }>).data.wizardId)).toEqual(
       GUILD.map((p) => p.id),
     );
     const last = events[events.length - 1];
-    expect(last.type).toBe("verdict");
-    if (last.type === "verdict") {
-      expect(last.verdict.takeMarkdown).toBe("the verdict");
+    expect(last.event).toBe("verdict");
+    if (last.event === "verdict") {
+      expect(last.data.verdict.takeMarkdown).toBe("the verdict");
     }
     const firstWizard = wizardEvents[0];
-    if (firstWizard.type === "wizard") {
-      expect(firstWizard.take.takeMarkdown).toBe("a wizardly take");
+    if (firstWizard.event === "wizard") {
+      expect(firstWizard.data.take.takeMarkdown).toBe("a wizardly take");
     }
     // 10 wizard tool calls + 1 verdict tool call
     expect(seen).toHaveLength(11);
@@ -135,10 +135,10 @@ describe("convene", () => {
       events.push(ev);
     }
 
-    expect(events.some((e) => e.type === "error")).toBe(true);
-    expect(events.filter((e) => e.type === "wizard")).toHaveLength(9);
+    expect(events.some((e) => e.event === "error")).toBe(true);
+    expect(events.filter((e) => e.event === "wizard")).toHaveLength(9);
     const last = events[events.length - 1];
-    expect(last.type).toBe("verdict");
+    expect(last.event).toBe("verdict");
   });
 });
 
@@ -170,7 +170,7 @@ describe("convene with search", () => {
     for (const wc of wizardCalls) {
       expect(wc.userContent).toContain("## Sources");
     }
-    expect(events.filter((e) => e.type === "wizard")).toHaveLength(10);
+    expect(events.filter((e) => e.event === "wizard")).toHaveLength(10);
   });
 
   it("does not call searchClient when one is not provided (backward compatible)", async () => {
@@ -182,7 +182,7 @@ describe("convene with search", () => {
     }
     // 10 wizards + 1 verdict, with no search calls
     expect(seen).toHaveLength(11);
-    expect(events.filter((e) => e.type === "wizard")).toHaveLength(10);
+    expect(events.filter((e) => e.event === "wizard")).toHaveLength(10);
   });
 
   it("a search failure (returns []) does not break the council — all wizards continue without sources", async () => {
@@ -193,8 +193,8 @@ describe("convene with search", () => {
     for await (const ev of convene({ question: "q", apiKey: "x", fetchImpl, search: searchClient })) {
       events.push(ev);
     }
-    expect(events.filter((e) => e.type === "wizard")).toHaveLength(10);
-    expect(events[events.length - 1].type).toBe("verdict");
+    expect(events.filter((e) => e.event === "wizard")).toHaveLength(10);
+    expect(events[events.length - 1].event).toBe("verdict");
     // No wizard call should contain a Sources block because the search returned empty
     const wizardCalls = seen.filter((c) => c.toolName === "emit_wizard_take");
     for (const wc of wizardCalls) {
@@ -237,11 +237,11 @@ describe("convene verdict fallback", () => {
       events.push(ev);
     }
     const last = events[events.length - 1];
-    expect(last.type).toBe("verdict");
-    if (last.type === "verdict") {
-      expect(last.verdict.stance).toBe("unanswerable");
-      expect(last.verdict.confidence).toBe(0);
-      expect(last.verdict.evidenceQuality).toBe("none");
+    expect(last.event).toBe("verdict");
+    if (last.event === "verdict") {
+      expect(last.data.verdict.stance).toBe("unanswerable");
+      expect(last.data.verdict.confidence).toBe(0);
+      expect(last.data.verdict.evidenceQuality).toBe("none");
     }
   });
 
@@ -255,13 +255,13 @@ describe("convene verdict fallback", () => {
     for await (const ev of convene({ question: "q", apiKey: "x", fetchImpl })) {
       events.push(ev);
     }
-    expect(events.filter((e) => e.type === "wizard")).toHaveLength(0);
-    expect(events.filter((e) => e.type === "error")).toHaveLength(10);
+    expect(events.filter((e) => e.event === "wizard")).toHaveLength(0);
+    expect(events.filter((e) => e.event === "error")).toHaveLength(10);
     const last = events[events.length - 1];
-    expect(last.type).toBe("verdict");
-    if (last.type === "verdict") {
-      expect(last.verdict.stance).toBe("unanswerable");
-      expect(last.verdict.takeMarkdown).toMatch(/no wizard/i);
+    expect(last.event).toBe("verdict");
+    if (last.event === "verdict") {
+      expect(last.data.verdict.stance).toBe("unanswerable");
+      expect(last.data.verdict.takeMarkdown).toMatch(/no wizard/i);
     }
     // The Clerk (emit_verdict) was never called — no take-list to synthesize.
     expect(seen.some((c) => c.toolName === "emit_verdict")).toBe(false);
@@ -279,11 +279,11 @@ describe("convene transport errors (not retried, not fabricated)", () => {
     for await (const ev of convene({ question: "q", apiKey: "x", fetchImpl })) {
       events.push(ev);
     }
-    expect(events.some((e) => e.type === "error")).toBe(true);
-    expect(events.filter((e) => e.type === "wizard")).toHaveLength(9);
+    expect(events.some((e) => e.event === "error")).toBe(true);
+    expect(events.filter((e) => e.event === "wizard")).toHaveLength(9);
     // 10 wizard-take calls (no extra retry call for the failed one), then the verdict.
     expect(seen.filter((c) => c.toolName === "emit_wizard_take")).toHaveLength(10);
-    expect(events[events.length - 1].type).toBe("verdict");
+    expect(events[events.length - 1].event).toBe("verdict");
   });
 
   it("emits an honest 'temporary problem' verdict — NOT the canned fallback — on a verdict transport error", async () => {
@@ -297,10 +297,10 @@ describe("convene transport errors (not retried, not fabricated)", () => {
       events.push(ev);
     }
     const last = events[events.length - 1];
-    expect(last.type).toBe("verdict");
-    if (last.type === "verdict") {
-      expect(last.verdict.takeMarkdown).toMatch(/temporary problem/i);
-      expect(last.verdict.takeMarkdown).not.toMatch(/could not reach a decision/i);
+    expect(last.event).toBe("verdict");
+    if (last.event === "verdict") {
+      expect(last.data.verdict.takeMarkdown).toMatch(/temporary problem/i);
+      expect(last.data.verdict.takeMarkdown).not.toMatch(/could not reach a decision/i);
     }
   });
 });

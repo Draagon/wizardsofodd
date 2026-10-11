@@ -64,10 +64,10 @@ describe("structured outputs — retry/fallback contract", () => {
     }
 
     expect(events.length).toBeGreaterThanOrEqual(2);  // 1 wizard + 1 verdict
-    const wizardEv = events.find((e) => e.type === "wizard");
-    expect(wizardEv?.type).toBe("wizard");
-    if (wizardEv?.type === "wizard") {
-      expect(wizardEv.take.takeMarkdown).toBe("Ship it.");
+    const wizardEv = events.find((e) => e.event === "wizard");
+    expect(wizardEv?.event).toBe("wizard");
+    if (wizardEv?.event === "wizard") {
+      expect(wizardEv.data.take.takeMarkdown).toBe("Ship it.");
     }
     expect(wizardCalls).toBe(2);  // first failed, retry succeeded
   });
@@ -90,14 +90,14 @@ describe("structured outputs — retry/fallback contract", () => {
       events.push(e);
     }
 
-    const errEv = events.find((e) => e.type === "error");
-    expect(errEv?.type).toBe("error");
-    if (errEv?.type === "error") {
-      expect(errEv.reason).toBeTruthy();
-      expect(errEv.wizardId).toBe(WIZARD_REGISTRY[0]!.wizard.id);
+    const errEv = events.find((e) => e.event === "error");
+    expect(errEv?.event).toBe("error");
+    if (errEv?.event === "error") {
+      expect(errEv.data.reason).toBeTruthy();
+      expect(errEv.data.wizardId).toBe(WIZARD_REGISTRY[0]!.wizard.id);
     }
     // No wizard event emitted (only error)
-    expect(events.find((e) => e.type === "wizard")).toBeUndefined();
+    expect(events.find((e) => e.event === "wizard")).toBeUndefined();
   });
 
   it("verdict malformed twice → falls back to {unanswerable, confidence:0}", async () => {
@@ -120,12 +120,12 @@ describe("structured outputs — retry/fallback contract", () => {
       events.push(e);
     }
 
-    const verdictEv = events.find((e) => e.type === "verdict");
-    expect(verdictEv?.type).toBe("verdict");
-    if (verdictEv?.type === "verdict") {
-      expect(verdictEv.verdict.stance).toBe("unanswerable");
-      expect(verdictEv.verdict.confidence).toBe(0);
-      expect(verdictEv.verdict.evidenceQuality).toBe("none");
+    const verdictEv = events.find((e) => e.event === "verdict");
+    expect(verdictEv?.event).toBe("verdict");
+    if (verdictEv?.event === "verdict") {
+      expect(verdictEv.data.verdict.stance).toBe("unanswerable");
+      expect(verdictEv.data.verdict.confidence).toBe(0);
+      expect(verdictEv.data.verdict.evidenceQuality).toBe("none");
     }
     expect(verdictCalls).toBe(2);  // initial + 1 retry
   });

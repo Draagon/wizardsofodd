@@ -10,11 +10,12 @@ import type { WizardSystemPayload } from "../db/generated/WizardSystemPayload";
 import type { WizardUserPayload } from "../db/generated/WizardUserPayload";
 import type { VerdictSystemPayload } from "../db/generated/VerdictSystemPayload";
 import type { VerdictUserPayload } from "../db/generated/VerdictUserPayload";
-import { templateProvider } from "../render/template-provider";
+import { templateProvider } from "../render/generated/templates";
 import { WIZARD_REGISTRY } from "../personas/generated/registry";
 import type { Wizard } from "../db/generated/Wizard";
 import type { WizardOutput } from "../db/generated/WizardOutput";
 import type { TurnLens } from "../db/generated/TurnLens";
+import { turnLensFieldsFromWizardOutput } from "../db/generated/TurnLens.lineage";
 import type { SourceLens } from "../db/generated/SourceLens";
 import type { AnthropicMessage } from "../llm/anthropic";
 import type { SearchResult } from "../llm/web-search";
@@ -35,14 +36,7 @@ export function fullName(p: Wizard): string {
 
 /** Project one prior wizard turn into the TurnLens shape shown to later wizards + the Clerk. */
 export function toTurnLens(t: PriorTurn): TurnLens {
-  return {
-    wizardId: t.persona.id,
-    wizardName: fullName(t.persona),
-    stance: t.take.stance,
-    takeMarkdown: t.take.takeMarkdown,
-    oneLineSummary: t.take.oneLineSummary,
-    confidence: t.take.confidence,
-  };
+  return { wizardId: t.persona.id, wizardName: fullName(t.persona), ...turnLensFieldsFromWizardOutput(t.take) };
 }
 
 /** Project a search hit into SourceLens. Snippet is truncated to 300 chars to

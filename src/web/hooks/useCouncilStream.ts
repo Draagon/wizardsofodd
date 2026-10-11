@@ -1,26 +1,18 @@
 import { useCallback, useReducer } from "react";
-import { parseSseStream, toTypedFrame } from "../lib/sse-parser";
+import { parseSseStream } from "../lib/sse-parser";
 
-import type { WizardOutput } from "../../db/generated/WizardOutput";
 import type { VerdictOutput } from "../../db/generated/VerdictOutput";
-import {
-  COUNCIL_EVENTS,
-  type CouncilFrame,
-} from "../generated/council-frames";
+import type { CouncilRequest } from "../../db/generated/CouncilRequest";
+import type { WizardFramePayload } from "../../db/generated/WizardFramePayload";
+import type { ErrorFramePayload } from "../../db/generated/ErrorFramePayload";
+import { toCouncilFrame, type CouncilFrame } from "../generated/council-frames";
 
-// SSE event payload shapes — sourced directly from the codegen'd row types so
-// the hook, the SSR share-page renderer, and the DB queries all speak the same
-// shape (post the codegen-ts $type<RefName[]>() + field.enum literal patches).
-export type WizardTake = WizardOutput;
+// SSE event payload shapes — sourced directly from the codegen'd types so the
+// hook, the SSR share-page renderer, and the DB queries all speak the same shape.
 export type Verdict = VerdictOutput;
 
-export interface WizardTurn {
-  kind: "wizard" | "error";
-  wizardId: string;
-  wizardName: string;
-  take?: WizardTake;
-  reason?: string;
-}
+/** One council turn as the UI renders it: a `wizard` or `error` frame's payload, tagged by kind. */
+export type WizardTurn = ({ kind: "wizard" } & WizardFramePayload) | ({ kind: "error" } & ErrorFramePayload);
 
 export type StreamStatus = "idle" | "streaming" | "complete" | "error";
 
@@ -45,9 +37,6 @@ export type StreamAction =
   | { type: "streamError"; message: string }
   | { type: "reset" };
 
-/** ReadonlySet of declared event names (the keys of COUNCIL_EVENTS). */
-const DECLARED_EVENTS: ReadonlySet<string> = new Set(Object.values(COUNCIL_EVENTS));
-
 export function reducer(state: StreamState, action: StreamAction): StreamState {
   if (action.type === "reset") return initialState;
   if (action.type === "streamError") {
@@ -63,14 +52,14 @@ export function reducer(state: StreamState, action: StreamAction): StreamState {
       if (state.slug === null) return state;
       return {
         ...state,
-        wizardTurns: [...state.wizardTurns, { kind: "wizard", wizardId: frame.data.wizardId, wizardName: frame.data.wizardName, take: frame.data.take }],
+        wizardTurns: [...state.wizardTurns, { kind: "wizard", ...frame.data }],
       };
     }
     case "error": {
       if (state.slug === null) return state;
       return {
         ...state,
-        wizardTurns: [...state.wizardTurns, { kind: "error", wizardId: frame.data.wizardId, wizardName: frame.data.wizardName, reason: frame.data.reason }],
+        wizardTurns: [...state.wizardTurns, { kind: "error", ...frame.data }],
       };
     }
     case "verdict": {
@@ -95,10 +84,7 @@ export function useCouncilStream() {
   const start = useCallback(async (question: string, turnstileToken: string, wizardIds?: string[]) => {
     dispatch({ type: "reset" });
     try {
-      const payload: { question: string; cfTurnstileToken: string; wizardIds?: string[] } = {
-        question,
-        cfTurnstileToken: turnstileToken,
-      };
+      const payload: CouncilRequest = { question, cfTurnstileToken: turnstileToken };
       if (wizardIds && wizardIds.length > 0) payload.wizardIds = wizardIds;
       const res = await fetch("/api/council", {
         method: "POST",
@@ -110,9 +96,9 @@ export function useCouncilStream() {
         return;
       }
       for await (const raw of parseSseStream(res.body)) {
-        const typed = toTypedFrame(raw, DECLARED_EVENTS);
-        if (typed === null) continue; // forward-compat: skip unknown events
-        dispatch({ type: "frame", frame: typed });
+        const frame = toCouncilFrame(raw);
+        if (frame === null) continue; // forward-compat: skip unknown events
+        dispatch({ type: "frame", frame });
       }
     } catch (err) {
       dispatch({ type: "streamError", message: (err as Error).message ?? "Stream failed" });

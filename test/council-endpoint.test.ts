@@ -106,6 +106,17 @@ describe("POST /api/council", () => {
       body: JSON.stringify({ question: "x".repeat(601) }),
     });
     expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Brevity, mortal. Keep it under 600 characters." });
+  });
+
+  it("accepts a question of exactly 600 characters past validation", async () => {
+    // No Turnstile token, so the request stops at the gate (429) — past the 400 length check.
+    const res = await SELF.fetch("https://wizardsofodd.com/api/council", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ question: "x".repeat(600) }),
+    });
+    expect(res.status).toBe(429);
   });
 
   it("returns 429 once the per-visitor daily limit is exhausted", async () => {

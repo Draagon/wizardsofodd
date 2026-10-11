@@ -13,12 +13,17 @@
 //                the inline `Db` type block above them to emit for another query builder.
 // use-when:      you want generated typed finders over Drizzle. Drop it if you hand-write
 //                all of your data access.
-// THIS COPY:     trimmed to READ-ONLY finders (a worked example of the "drop verbs"
+// THIS COPY:     trimmed to the READS this app makes (a worked example of the "drop verbs"
 //                customization). This app's writes are bespoke — hand-rolled inserts and
 //                updates in src/db/queries.ts over these generated row types — the same
 //                stance as the deliberately-absent routes generator (see
 //                metaobjects.config.ts). So create/update/delete, and the #203
 //                insertPreserving escape hatch that attaches to create, are all dropped.
+//                The stock create/update also PARSE their input against the insert/update
+//                schema, which this app's writes never did — adopting them would start
+//                rejecting rows written today. `list` is dropped too (nothing pages), and
+//                a composition PART (CouncilTurn) gets no file of its own: it is read
+//                through its aggregate root's find<Root>With<Parts> loader (added below).
 // emits:         <target>/<Entity>.queries.ts per source-backed object (any source.rdb kind,
 //                incl. read-only projections) — skipped for sourceless objects (incl. every
 //                object.value, source-less by value purity) and TPH subtypes (#248 R2).
@@ -36,8 +41,13 @@
 // primitives below, or (with a globally-installed / linked CLI, where the project and
 // the CLI resolve ts-poet to different physical copies) every section renders
 // standalone with its own duplicate import header.
-import { code, joinCode, type Code } from "@metaobjectsdev/codegen-ts";
-import type { MetaObject } from "@metaobjectsdev/metadata";
+import { code, imp, joinCode, type Code } from "@metaobjectsdev/codegen-ts";
+import {
+  isMetaObject,
+  resolveObjectRef,
+  RELATIONSHIP_SUBTYPE_COMPOSITION,
+  type MetaObject,
+} from "@metaobjectsdev/metadata";
 import {
   perEntity,
   type Generator,
@@ -45,9 +55,9 @@ import {
   type RenderContext,
   entityModuleSpecifier,
   renderFindByIdFn,
-  renderListFn,
   renderReverseFinderFns,
   reverseFksFor,
+  getPkInfo,
   isTphDiscriminatorBase,
   isProjection,
   isWriteThrough,
@@ -106,7 +116,6 @@ import { ${varName}, type ${entityName} } from ${JSON.stringify(entityFileName)}
   const sections: Code[] = [
     literalImports,
     renderFindByIdFn(obj, ctx),
-    renderListFn(obj, ctx),
   ];
 
   // ADR-0038 — reverse-relationship navigation as explicit FK finders. One
@@ -116,12 +125,107 @@ import { ${varName}, type ${entityName} } from ${JSON.stringify(entityFileName)}
     sections.push(renderReverseFinderFns(obj, fk, ctx));
   }
 
+  // OWNED addition — one aggregate loader per composition this entity owns
+  // (`relationship.composition` with cardinality many): the parent row plus its
+  // parts, keyed by the relationship's name. See renderCompositionLoader.
+  for (const part of compositionPartsOf(obj, ctx)) {
+    const partModule = entityModuleSpecifier(
+      ctx.selfTarget,
+      ctx.entityModuleTarget,
+      part.child.package,
+      part.child.name,
+      ctx.extStyle,
+    );
+    sections.push(code`
+import { ${part.childTable}, type ${part.child.name} } from ${JSON.stringify(partModule)};
+`);
+    sections.push(renderCompositionLoader(obj, part, ctx));
+  }
+
   const body = joinCode(sections, { on: "\n" }).toString();
   const header =
     `// ${GENERATED_HEADER} — DO NOT EDIT.\n` +
     `// Source metadata: ${entityName} (${obj.fqn()})\n` +
     `// Customize via ${entityName}.extra.ts in this directory (additional queries, custom logic).\n`;
   return header + body;
+}
+
+// --- OWNED: composition aggregate loaders ---------------------------------
+// A `relationship.composition` with cardinality many says the parent OWNS a
+// collection of child rows (cascade on delete). The loader reads the parent by
+// id and its parts through the child's reference identity back to the parent,
+// ordered by the rest of the child's primary key — for a part keyed
+// (parentId, ordinal) that is the part's position within its parent.
+interface CompositionPart {
+  /** The relationship name — the parts' key in the aggregate (e.g. `turns`). */
+  relName: string;
+  child: MetaObject;
+  /** The child's Drizzle table variable (e.g. `councilTurns`). */
+  childTable: string;
+  /** The child's FK field that references the parent (e.g. `councilId`). */
+  fkField: string;
+  /** The child's primary-key fields after the FK, in order (e.g. [`ordinal`]). */
+  orderFields: string[];
+}
+
+function compositionPartsOf(obj: MetaObject, ctx: RenderContext): CompositionPart[] {
+  const parts: CompositionPart[] = [];
+  for (const rel of obj.relationships()) {
+    if (rel.subType !== RELATIONSHIP_SUBTYPE_COMPOSITION || rel.cardinality !== "many") continue;
+    const { node: child } = resolveObjectRef(
+      ctx.loadedRoot,
+      rel.objectRef ?? "",
+      obj.package ?? obj.fileDefaultPackage ?? "",
+    );
+    if (!child || !isMetaObject(child)) {
+      throw new Error(`queries-file: ${obj.name}.${rel.name} composes unknown object "${rel.objectRef}"`);
+    }
+    const fk = reverseFksFor(child).find((f) => f.targetEntity === obj.name);
+    if (!fk) {
+      throw new Error(
+        `queries-file: ${obj.name}.${rel.name} composes ${child.name}, which has no identity.reference to ${obj.name}`,
+      );
+    }
+    const pkFields = child.primaryIdentity()?.fields ?? [];
+    parts.push({
+      relName: rel.name,
+      child,
+      childTable: ctx.collectionName(child.name),
+      fkField: fk.fkField,
+      orderFields: pkFields.filter((f) => f !== fk.fkField),
+    });
+  }
+  return parts;
+}
+
+function renderCompositionLoader(obj: MetaObject, part: CompositionPart, ctx: RenderContext): Code {
+  const entityName = obj.name;
+  const parentVar = entityName.charAt(0).toLowerCase() + entityName.slice(1);
+  const relPascal = part.relName.charAt(0).toUpperCase() + part.relName.slice(1);
+  const aggregate = `${entityName}With${relPascal}`;
+  const { fieldName: pkField, tsType: pkType } = getPkInfo(obj, ctx);
+  const eqSym = imp("eq@drizzle-orm");
+  const ascSym = imp("asc@drizzle-orm");
+  const orderBy = part.orderFields.map((f) => code`${ascSym}(${part.childTable}.${f})`);
+  return code`
+/** A ${entityName} with the ${part.child.name} rows it owns (relationship.composition \`${part.relName}\`). */
+export interface ${aggregate} {
+  ${parentVar}: ${entityName};
+  ${part.relName}: ${part.child.name}[];
+}
+
+/** Load a ${entityName} and its \`${part.relName}\` (ordered by ${part.orderFields.join(", ") || "storage order"}); null when absent. */
+export async function find${aggregate}(db: Db, ${pkField}: ${pkType}): Promise<${aggregate} | null> {
+  const ${parentVar} = await find${entityName}ById(db, ${pkField});
+  if (!${parentVar}) return null;
+  const ${part.relName} = await db
+    .select()
+    .from(${part.childTable})
+    .where(${eqSym}(${part.childTable}.${part.fkField}, ${pkField}))${orderBy.length > 0 ? code`
+    .orderBy(${joinCode(orderBy, { on: ", " })})` : ""};
+  return { ${parentVar}, ${part.relName} };
+}
+`;
 }
 
 export interface QueriesFileOpts {
@@ -137,7 +241,26 @@ export interface QueriesFileOpts {
 // loadable value ever has hasAnyRdbSource === true). TPH subtypes emit no
 // standalone queries file either — their per-subtype CRUD helpers live in the
 // discriminator base's queries file (which targets the single shared table).
-const skipNonQueryable = (e: MetaObject): boolean => hasAnyRdbSource(e) && !isTphSubtype(e);
+const skipNonQueryable = (e: MetaObject): boolean =>
+  hasAnyRdbSource(e) && !isTphSubtype(e) && !isCompositionPart(e);
+
+// OWNED: an entity another entity composes (`relationship.composition`, cardinality
+// many) is a PART of that aggregate — it is loaded through the root's
+// find<Root>With<Parts>, so a standalone queries file for it would only be dead
+// code (and the stock findById on a composite key matches on its first column only).
+function isCompositionPart(e: MetaObject): boolean {
+  const root = e.root();
+  return root.children().some(
+    (owner) =>
+      isMetaObject(owner) &&
+      owner !== e &&
+      owner.relationships().some((rel) => {
+        if (rel.subType !== RELATIONSHIP_SUBTYPE_COMPOSITION || rel.cardinality !== "many") return false;
+        const { node } = resolveObjectRef(root, rel.objectRef ?? "", owner.package ?? owner.fileDefaultPackage ?? "");
+        return node === e;
+      }),
+  );
+}
 
 export const queriesFile = function queriesFile(opts?: QueriesFileOpts): Generator {
   const userFilter = opts?.filter;
@@ -148,6 +271,9 @@ export const queriesFile = function queriesFile(opts?: QueriesFileOpts): Generat
   const generator: Generator = {
     name: "queries-file",
     filter,
+    // Sole producer of *.queries.ts: when an entity stops getting one (e.g. it
+    // becomes a composition part), the run removes the untouched old file.
+    orphanPolicy: { owns: (relPath) => relPath.endsWith(".queries.ts") },
     generate: perEntity(async (entity, ctx) => {
       if (!ctx.renderContext) {
         throw new Error("queries-file: renderContext is required (provided by runGen)");

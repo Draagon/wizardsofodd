@@ -1,8 +1,8 @@
 // Custom MO codegen Generator: emits src/web/generated/council-frames.ts — a
 // discriminated-union `CouncilFrame` type spanning every declared SSE event
-// the council orchestrator emits, plus a typed `sse(event, data)` helper
-// the Worker uses to enqueue frames AND a per-event payload-type lookup the
-// React reducer uses to narrow each `frame.event` case.
+// the council orchestrator emits, plus the wire helpers every tier shares:
+// encodeCouncilFrame (Worker, emit side) and isCouncilFrameEvent /
+// toCouncilFrame (client, decode side).
 //
 // Source of truth: every `template.streamFrame` node in the loaded MetaRoot.
 // The template.streamFrame subtype is registered by wizardsofoddProvider
@@ -19,8 +19,8 @@
 //
 // Demonstration value: adding a new SSE event to the council is a 2-file YAML
 // drop (one payload value-object + one streamFrame node) + a regen — the
-// reducer's case list, the orchestrator's sse() call sites, and the shared
-// CouncilFrame union all update on the next `npm run gen:db`.
+// shared CouncilFrame union, the declared-event guard and the reducer's
+// exhaustiveness check all update on the next `npm run gen:db`.
 
 import type { Generator, EmittedFile, GenContext } from "@metaobjectsdev/codegen-ts";
 import { oncePerRun } from "@metaobjectsdev/codegen-ts";
@@ -95,18 +95,9 @@ export const sseFrames = (): Generator => ({
       )
       .join("\n");
 
-    // Per-event payload-type lookup, used by the parser/reducer to narrow
-    // each case after switching on frame.event.
-    const byEventEntries = specs
-      .map(
-        (s) =>
-          `  ${JSON.stringify(s.eventName)}: ${s.payloadRef};`,
-      )
-      .join("\n");
-
     // COUNCIL_EVENTS const map — { council: "council", wizard: "wizard", ... }.
-    // Worker call sites import this and use COUNCIL_EVENTS.wizard instead of the
-    // raw string "wizard", so TS catches typos at the call site.
+    // It is the runtime copy of the declared event set: the client's
+    // isCouncilFrameEvent guard reads it to drop events this build doesn't know.
     const eventConstEntries = specs
       .map(
         (s) =>
@@ -118,11 +109,10 @@ export const sseFrames = (): Generator => ({
 // AUTO-GENERATED — re-run \`npm run gen:db\`.
 // Source of truth: every template.streamFrame node under metaobjects/.
 //
-// CouncilFrame is the discriminated union the React reducer and the SSE
-// parser both consume; CouncilFrameByEventName lets a switch on frame.event
-// narrow the payload at each case without hand-written casts. COUNCIL_EVENTS
-// is the typed event-name lookup the Worker uses on the emit side so the
-// wire name is verified at compile time.
+// CouncilFrame is the discriminated union every tier speaks: the orchestrator
+// yields frames, the Worker encodes them with encodeCouncilFrame, and the
+// client narrows decoded frames with toCouncilFrame before its reducer
+// switches on frame.event.
 
 ${payloadImports}
 
@@ -131,26 +121,33 @@ export type CouncilFrameEventName = ${eventNameUnion};
 export type CouncilFrame =
 ${unionArms};
 
-export type CouncilFrameByEventName = {
-${byEventEntries}
-};
+/** The frame (or frames) for the given event name(s). */
+export type CouncilFrameOf<E extends CouncilFrameEventName> = Extract<CouncilFrame, { event: E }>;
 
 export const COUNCIL_EVENTS = {
 ${eventConstEntries}
 } as const satisfies Record<CouncilFrameEventName, CouncilFrameEventName>;
 
+const DECLARED_EVENTS: ReadonlySet<string> = new Set(Object.values(COUNCIL_EVENTS));
+
+/** Encode one frame as SSE wire text: an event line, a JSON data line, a blank line. */
+export function encodeCouncilFrame(frame: CouncilFrame): string {
+  return \`event: \${frame.event}\\ndata: \${JSON.stringify(frame.data)}\\n\\n\`;
+}
+
+/** True when \`name\` is one of the declared stream-frame events. */
+export function isCouncilFrameEvent(name: string): name is CouncilFrameEventName {
+  return DECLARED_EVENTS.has(name);
+}
+
 /**
- * Build one SSE wire frame from a typed (event, payload) pair.
- *
- * The overload + index signature lets the caller pass any of the declared
- * event names and have the payload narrowed to the right shape — passing
- * COUNCIL_EVENTS.wizard with a non-WizardFramePayload value is a TS error.
+ * Narrow a decoded wire frame to CouncilFrame, or null when its event is not
+ * declared (forward compatibility: a newer server may send events this client
+ * doesn't know). The payload is trusted by contract — the Worker encodes every
+ * frame from this same union — so this is the wire boundary, like fetch().json().
  */
-export function sseFrame<E extends CouncilFrameEventName>(
-  event: E,
-  data: CouncilFrameByEventName[E],
-): string {
-  return \`event: \${event}\\ndata: \${JSON.stringify(data)}\\n\\n\`;
+export function toCouncilFrame(raw: { event: string; data: unknown }): CouncilFrame | null {
+  return isCouncilFrameEvent(raw.event) ? (raw as CouncilFrame) : null;
 }
 `;
 

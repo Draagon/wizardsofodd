@@ -100,7 +100,9 @@ Pure-SSR React. The Worker reads `councils` + `council_turns` from D1, hands
 them to `renderShareSync` (a React 18 server render to string), and returns
 HTML with no client hydration. Same `WizardCard` / `VerdictCard` components
 the live SPA uses, so the offline-share view stays byte-identical to the
-streaming one. `GET /c/:slug.json` exposes the same data as JSON for tooling.
+streaming one. `GET /c/:slug.json` exposes the same data as JSON for tooling:
+the turns plus the council's public `SharedCouncil` view (no visitor id; every
+declared field is always present, a NULL column as `null`).
 
 ## Request flow: GET / and GET /api/health
 
@@ -114,8 +116,9 @@ React 18 SPA, Vite-bundled, no framework router (just route-on-URL in
 
 - `useCouncilStream` hook reads SSE frames from `POST /api/council`, parses
   them via `parseSseStream` (handles partial frames buffered across chunk
-  boundaries, skips unparseable frames without aborting), and reduces a
-  council state machine.
+  boundaries, skips unparseable frames without aborting), narrows each to the
+  generated `CouncilFrame` union with `toCouncilFrame` (dropping events this
+  build doesn't declare), and reduces a council state machine.
 - `WizardCard` and `VerdictCard` render the structured payload directly
   from the codegen'd `WizardOutput` / `VerdictOutput` types — `renderMarkdownLite`
   escape-then-render still handles wizard prose (no XSS surface).

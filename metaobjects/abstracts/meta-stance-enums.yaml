@@ -13,6 +13,7 @@
 #   wizardStance  — a wizard's position (WizardOutput.stance, TurnLens.stance, CouncilTurn.stance)
 #   guildVerdict  — the Guild's overall ruling (VerdictOutput.stance, Council.verdictStance)
 #   evidenceGrade — how grounded the takes were (VerdictOutput.evidenceQuality, Council.verdictEvidenceQuality)
+#   councilStatus — a council's lifecycle (Council.status, SharedCouncil.status)
 #
 # "yes"/"no" are quoted deliberately: a YAML-1.1 consumer (e.g. SnakeYAML in a
 # cross-language port) would coerce bare yes/no to booleans. Quoting keeps them
@@ -32,3 +33,7 @@ metadata:
         name: evidenceGrade
         abstract: true
         values: [strong, mixed, thin, none]
+    - field.enum:
+        name: councilStatus
+        abstract: true
+        values: [pending, partial, complete, error]

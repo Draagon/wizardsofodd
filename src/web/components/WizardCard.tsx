@@ -1,4 +1,4 @@
-import type { WizardTake, WizardTurn } from "../hooks/useCouncilStream";
+import type { WizardTurn } from "../hooks/useCouncilStream";
 import { Markdown } from "./Markdown";
 import { portraitSrc, onPortraitError } from "./portrait";
 
@@ -26,7 +26,7 @@ export function WizardCard({ turn }: Props) {
       </article>
     );
   }
-  const take = turn.take as WizardTake;
+  const { take } = turn;
   return (
     <article className="card card-wizard" aria-label={turn.wizardName}>
       <img className="portrait" src={portrait} alt="" onError={onPortraitError} />

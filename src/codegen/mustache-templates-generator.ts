@@ -1,7 +1,8 @@
 // Custom MO codegen Generator: inlines every .mustache file under data/templates/
-// into src/render/generated/templates.ts as a TEMPLATES const, so the Cloudflare
-// Worker (which has no fs access at runtime) can resolve them via the
-// InMemoryProvider. The .mustache files on disk are the edit-time source of
+// into src/render/generated/templates.ts as a TEMPLATES const, plus the
+// `templateProvider` (an InMemoryProvider over it) that every render call takes,
+// so the Cloudflare Worker (which has no fs access at runtime) resolves refs by
+// `group/source`. The .mustache files on disk are the edit-time source of
 // truth; the emitted module is the runtime source of truth.
 //
 // Folded from the former scripts/build-templates.ts into a Generator so the
@@ -52,7 +53,12 @@ export const mustacheTemplates = (): Generator => ({
 // AUTO-GENERATED — re-run \`npm run gen:db\`.
 // Source of truth: data/templates/**/*.mustache
 
+import { InMemoryProvider, type Provider } from "@metaobjectsdev/render";
+
 export const TEMPLATES: Readonly<Record<string, string>> = ${JSON.stringify(entries, null, 2)} as const;
+
+/** Resolves a template ref (\`wizards/grumbel-system\`) to its inlined Mustache text. */
+export const templateProvider: Provider = new InMemoryProvider(TEMPLATES);
 `;
 
     // Bare filename — the engine writes it under the "render" target's outDir.

@@ -43,7 +43,10 @@ once, reused by `WizardOutput`, `TurnLens`, and `CouncilTurn`. From that one spi
 - `lineageMappers` (custom) emits the copies between `WizardOutput` and the objects whose
   fields `extends` it: `CouncilTurn.lineage.ts` (persist a take, rehydrate it) and
   `TurnLens.lineage.ts` (project a prior take into the next prompt). A field added to all
-  three can no longer be dropped by a hand-written copy.
+  three can no longer be dropped by a hand-written copy. The same generator builds the public
+  `SharedCouncil` view that `GET /c/:slug.json` serves: its declared fields *are* the
+  exposure, so `visitorId` stays private and a new `Council` column stays hidden until
+  someone adds it to `SharedCouncil` on purpose.
 
 Rename a field on `WizardOutput`, or on the `WizardUserPayload` that the prompts bind, and the
 drift gate fails across all of it at once — the money shot in the [README](../README.md).

@@ -106,11 +106,12 @@ export default defineConfig({
     structuredCompletion(), // → llm target (toolcalls.ts)
     sseFrames(), // → web target (council-frames.ts)
     // Field-lineage mappers (→ default target, <Target>.lineage.ts): the copies
-    // between WizardOutput and the objects whose fields `extends` it. Listed
+    // between an object and the objects whose fields `extends` it. Listed
     // explicitly so only the mappers the app actually calls are emitted.
     lineageMappers([
       { from: "WizardOutput", to: "CouncilTurn", reverse: true }, // persist a take / rehydrate it
       { from: "WizardOutput", to: "TurnLens" }, // project a prior take into the prompt payload
+      { from: "Council", to: "SharedCouncil" }, // the public /c/:slug.json view (no visitorId)
     ]),
   ],
 });

@@ -1,5 +1,5 @@
 // Custom MO codegen Generator: emits src/db/generated/<Target>.lineage.ts — typed
-// mappers between a value object and an object whose fields DESCEND from it.
+// mappers between an object and another object whose fields DESCEND from it.
 //
 // Source of truth: field-level lineage in the metadata. A target field descends
 // from a source field when it
@@ -14,13 +14,16 @@
 // Without these mappers the field list of WizardOutput was re-spelled by hand in
 // every place that persisted or projected it; a field added to the value object
 // and its descendants could be silently dropped by one of the copies. Now the
-// copies are generated from the same `extends` links the drift gate checks.
+// copies are generated from the same `extends` links the drift gate checks. The same
+// mechanism builds the public SharedCouncil view of a Council row: only the
+// fields SharedCouncil declares are copied, so the exposure fails closed.
 //
 // Which mappers to emit is listed in metaobjects.config.ts (only the consumed
 // ones — generated code nothing imports is noise).
 //
 // Conversion rules (all derived from @required on the two fields):
-//   forward  source → target fields   optional source onto a nullable column → `?? null`
+//   forward  source → target fields   optional source onto a nullable column → `?? null`;
+//                                     onto an optional value field → omitted when absent/NULL
 //   reverse  target row → source      optional source from a nullable column → omitted when NULL
 // Anything else that cannot be typed honestly (a required source field read from
 // a nullable column, an optional source written to a NOT NULL column, a reverse
@@ -31,7 +34,7 @@ import { formatTs, oncePerRun } from "@metaobjectsdev/codegen-ts";
 import { isMetaObject, isMetaRoot, type MetaField, type MetaObject } from "@metaobjectsdev/metadata";
 
 export interface LineageMapperSpec {
-  /** The value object the target's fields descend from (e.g. "WizardOutput"). */
+  /** The object the target's fields descend from (e.g. "WizardOutput", "Council"). */
   from: string;
   /** The object whose fields descend from it (e.g. "CouncilTurn"). */
   to: string;
@@ -90,7 +93,9 @@ function renderForward(spec: LineageMapperSpec, target: MetaObject, pairs: Linea
         `lineage-mappers: optional ${spec.from}.${source.name} cannot fill required ${target.name}.${tf.name}`,
       );
     }
-    return `    ${tf.name}: ${isEntity ? `${read} ?? null` : read},`;
+    // Onto a nullable column: absent → NULL. Onto an optional value field: absent
+    // (undefined, or a NULL column when the source is an entity row) → key omitted.
+    return isEntity ? `    ${tf.name}: ${read} ?? null,` : `    ...(${read} != null ? { ${tf.name}: ${read} } : {}),`;
   });
   return `/** ${spec.from} → the ${target.name} fields that descend from it. */
 export function ${lcFirst(target.name)}FieldsFrom${spec.from}(v: ${spec.from}): ${fieldsType} {

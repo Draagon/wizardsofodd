@@ -4,12 +4,14 @@ import {
   wizardOutputFromCouncilTurn,
 } from "../src/db/generated/CouncilTurn.lineage";
 import { turnLensFieldsFromWizardOutput } from "../src/db/generated/TurnLens.lineage";
+import { sharedCouncilFieldsFromCouncil } from "../src/db/generated/SharedCouncil.lineage";
+import type { Council } from "../src/db/generated/Council";
 import type { WizardOutput } from "../src/db/generated/WizardOutput";
 import type { CouncilTurn } from "../src/db/generated/CouncilTurn";
 
-// Lineage mappers are generated from field-level `extends: WizardOutput.<field>`
+// Lineage mappers are generated from field-level `extends: <Source>.<field>`
 // (and same-named fields sharing an abstract, e.g. `stance` → wizardStance) in
-// metaobjects/meta-council-turn.yaml and meta-turn-lens.yaml.
+// metaobjects/meta-council-turn.yaml, meta-turn-lens.yaml and meta-shared-council.yaml.
 
 const TAKE: WizardOutput = {
   stance: "complicates",
@@ -71,5 +73,20 @@ describe("turnLensFieldsFromWizardOutput", () => {
       oneLineSummary: "Dragon-dependent.",
       confidence: 0.4,
     });
+  });
+});
+
+describe("sharedCouncilFieldsFromCouncil", () => {
+  const ROW: Council = {
+    id: "abc12xyz", visitorId: "secret-visitor", question: "Q?", status: "pending",
+    verdictStance: null, verdictConfidence: null, verdictMarkdown: null, verdictEvidenceQuality: null,
+    dissents: null, verdictAgreements: null, verdictSplits: null, verdictVerifyNote: null,
+    createdAt: 1, completedAt: null,
+  };
+
+  it("copies only the declared public fields and omits NULL columns", () => {
+    const shared = sharedCouncilFieldsFromCouncil(ROW);
+    expect(shared).toStrictEqual({ id: "abc12xyz", question: "Q?", status: "pending", createdAt: 1 });
+    expect(JSON.stringify(shared)).not.toContain("secret-visitor");
   });
 });

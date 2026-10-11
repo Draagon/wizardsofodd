@@ -12,7 +12,11 @@ import {
 import { z } from "zod";
 import { CouncilNames } from "./Council.names";
 import { type Dissent, DissentInsertSchema } from "./Dissent";
-import { EvidenceGradeEnum, GuildVerdictEnum } from "./enums";
+import {
+  CouncilStatusEnum,
+  EvidenceGradeEnum,
+  GuildVerdictEnum,
+} from "./enums";
 
 export const councils = sqliteTable(
   CouncilNames.sources.primary.table,
@@ -65,13 +69,7 @@ export const councils = sqliteTable(
 export type Council = InferSelectModel<typeof councils>;
 export type CouncilInsert = InferInsertModel<typeof councils>;
 export type CouncilUpdate = Partial<CouncilInsert>;
-export type CouncilStatus = "pending" | "partial" | "complete" | "error";
-export const CouncilStatusEnum = z.enum([
-  "pending",
-  "partial",
-  "complete",
-  "error",
-]);
+export { type CouncilStatus, CouncilStatusEnum } from "./enums";
 export { type GuildVerdict, GuildVerdictEnum } from "./enums";
 export { type EvidenceGrade, EvidenceGradeEnum } from "./enums";
 export const CouncilInsertSchema = z.object({
@@ -86,7 +84,7 @@ export const CouncilInsertSchema = z.object({
     ),
   visitorId: z.string().min(1).max(64),
   question: z.string().min(1),
-  status: z.enum(["pending", "partial", "complete", "error"]),
+  status: CouncilStatusEnum,
   verdictStance: GuildVerdictEnum.optional(),
   verdictConfidence: z.number().optional(),
   verdictMarkdown: z.string().optional(),
@@ -112,7 +110,7 @@ export const CouncilUpdateSchema = z.object({
     .optional(),
   visitorId: z.string().min(1).max(64).optional(),
   question: z.string().min(1).optional(),
-  status: z.enum(["pending", "partial", "complete", "error"]).optional(),
+  status: CouncilStatusEnum.optional(),
   verdictStance: GuildVerdictEnum.optional().nullable(),
   verdictConfidence: z.number().optional().nullable(),
   verdictMarkdown: z.string().optional().nullable(),

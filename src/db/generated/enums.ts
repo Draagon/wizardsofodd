@@ -15,6 +15,13 @@ export const WizardStanceEnum = z.enum([
   "reframes",
   "abstains",
 ]);
+export type CouncilStatus = "pending" | "partial" | "complete" | "error";
+export const CouncilStatusEnum = z.enum([
+  "pending",
+  "partial",
+  "complete",
+  "error",
+]);
 export type GuildVerdict = "yes" | "no" | "it_depends" | "unanswerable";
 export const GuildVerdictEnum = z.enum([
   "yes",

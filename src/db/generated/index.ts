@@ -8,6 +8,7 @@ export * from "./DoneFramePayload";
 export * from "./ErrorFramePayload";
 export * from "./RivalLens";
 export * from "./RosterLens";
+export * from "./SharedCouncil";
 export * from "./SourceLens";
 export * from "./TurnLens";
 export * from "./VerdictFramePayload";

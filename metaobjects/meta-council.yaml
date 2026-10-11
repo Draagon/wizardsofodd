@@ -20,7 +20,7 @@ metadata:
               required: true
           - field.enum:
               name: status
-              values: [pending, partial, complete, error]
+              extends: councilStatus
               required: true
           - field.enum:
               name: verdictStance

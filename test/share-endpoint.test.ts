@@ -96,6 +96,19 @@ describe("GET /c/:slug.json — share data", () => {
     expect(body.turns).toHaveLength(1);
   });
 
+  it("serves only the public SharedCouncil fields — never the visitor id", async () => {
+    await seedComplete("cJsonBBB");
+    const res = await SELF.fetch("https://wizardsofodd.com/c/cJsonBBB.json");
+    const body = (await res.json()) as { council: Record<string, unknown> };
+    expect(body.council).not.toHaveProperty("visitorId");
+    expect(body.council).toEqual({
+      id: "cJsonBBB", question: "Test?", status: "complete",
+      verdictStance: "yes", verdictConfidence: 0.5, verdictMarkdown: "Yes.",
+      verdictEvidenceQuality: "thin", dissents: [],
+      createdAt: 1, completedAt: 2,
+    });
+  });
+
   it("returns 404 for unknown slug", async () => {
     const res = await SELF.fetch("https://wizardsofodd.com/c/nojson00.json");
     expect(res.status).toBe(404);

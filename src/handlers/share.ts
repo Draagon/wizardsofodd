@@ -1,6 +1,7 @@
 import type { Hono } from "hono";
 import { getDb } from "../db/client";
 import { findCouncilWithTurns } from "../db/generated/Council.queries";
+import { sharedCouncilFieldsFromCouncil } from "../db/generated/SharedCouncil.lineage";
 import { renderShareHtml } from "../render/share-html";
 import { CouncilInsertSchema } from "../db/generated/Council";
 import type { Env } from "../index";
@@ -24,7 +25,8 @@ export function registerShareRoutes(app: Hono<{ Bindings: Env }>): void {
     const db = getDb(c.env);
     const data = await findCouncilWithTurns(db, slug);
     if (!data) return c.text("Not found", 404);
-    return c.json(data);
+    // Public view: only the fields SharedCouncil declares (never visitorId).
+    return c.json({ council: sharedCouncilFieldsFromCouncil(data.council), turns: data.turns });
   });
 
   app.get("/c/:slug", async (c) => {

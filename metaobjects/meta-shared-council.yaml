@@ -1,0 +1,59 @@
+# SharedCouncil — the PUBLIC view of a council, served as `council` by
+# GET /c/:slug.json. Its field set IS the exposure: each field descends from the
+# Council column it publishes, and the lineage-mappers generator emits the copy
+# (src/db/generated/SharedCouncil.lineage.ts). A Council column that is not
+# declared here is never served — visitorId (the rate-limit cookie id) stays
+# private, and a new column stays hidden until someone adds it here on purpose.
+#
+# Enum fields extend the shared abstract (not Council.<field>) so they keep the
+# shared generated enum module; the generator pairs same-named fields that
+# share an abstract.
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: SharedCouncil
+        children:
+          - field.string:
+              name: id
+              extends: Council.id
+              required: true
+          - field.string:
+              name: question
+              extends: Council.question
+          - field.enum:
+              name: status
+              extends: councilStatus
+              required: true
+          - field.enum:
+              name: verdictStance
+              extends: guildVerdict
+              required: false
+          - field.float:
+              name: verdictConfidence
+              extends: Council.verdictConfidence
+          - field.string:
+              name: verdictMarkdown
+              extends: Council.verdictMarkdown
+          - field.enum:
+              name: verdictEvidenceQuality
+              extends: evidenceGrade
+              required: false
+          - field.object:
+              name: dissents
+              extends: Council.dissents
+          - field.string:
+              name: verdictAgreements
+              extends: Council.verdictAgreements
+          - field.string:
+              name: verdictSplits
+              extends: Council.verdictSplits
+          - field.string:
+              name: verdictVerifyNote
+              extends: Council.verdictVerifyNote
+          - field.long:
+              name: createdAt
+              extends: Council.createdAt
+          - field.long:
+              name: completedAt
+              extends: Council.completedAt

@@ -22,13 +22,12 @@
 // ones — generated code nothing imports is noise).
 //
 // Conversion rules (all derived from @required on the two fields):
-//   forward  source → target fields   optional source onto a nullable column → `?? null`;
-//                                     onto an optional value field → omitted when absent/NULL,
-//                                     or `?? null` when the spec sets `nullForAbsent`
+//   forward  source → target fields   optional source → `?? null` (onto a nullable column, or
+//                                     onto an optional value field under `nullForAbsent`)
 //   reverse  target row → source      optional source from a nullable column → omitted when NULL
-// Anything else that cannot be typed honestly (a required source field read from
-// a nullable column, an optional source written to a NOT NULL column, a reverse
-// mapper that misses a required source field) fails generation with the reason.
+// Anything else (a required source field read from a nullable column, an optional
+// source written to a NOT NULL column or to a value field without `nullForAbsent`, a
+// reverse mapper that misses a required source field) fails generation with the reason.
 
 import type { Generator, EmittedFile, GenContext } from "@metaobjectsdev/codegen-ts";
 import { formatTs, oncePerRun } from "@metaobjectsdev/codegen-ts";
@@ -42,8 +41,9 @@ export interface LineageMapperSpec {
   /** Also emit the reverse mapper, target row → source value. Entity targets only. */
   reverse?: boolean;
   /**
-   * Value-object targets only: emit `null` for an absent/NULL optional field instead
-   * of omitting its key, so the mapped object always carries every descended key.
+   * Value-object targets only, and required when an optional source field maps onto
+   * one: emit `null` for an absent/NULL field, so the mapped object always carries
+   * every descended key.
    */
   nullForAbsent?: boolean;
 }
@@ -113,12 +113,13 @@ function renderForward(spec: LineageMapperSpec, target: MetaObject, pairs: Linea
         `lineage-mappers: optional ${spec.from}.${source.name} cannot fill required ${target.name}.${tf.name}`,
       );
     }
-    // Onto a nullable column: absent → NULL. Onto an optional value field: absent
-    // (undefined, or a NULL column when the source is an entity row) → key omitted,
-    // or null under nullForAbsent.
-    return isEntity || spec.nullForAbsent
-      ? `    ${tf.name}: ${read} ?? null,`
-      : `    ...(${read} != null ? { ${tf.name}: ${read} } : {}),`;
+    if (!isEntity && !spec.nullForAbsent) {
+      throw new Error(
+        `lineage-mappers: optional ${spec.from}.${source.name} onto value-object field ${target.name}.${tf.name} needs nullForAbsent on the spec`,
+      );
+    }
+    // Absent (undefined, or a NULL column when the source is an entity row) → null.
+    return `    ${tf.name}: ${read} ?? null,`;
   });
   return `/** ${spec.from} → the ${target.name} fields that descend from it. */
 export function ${lcFirst(target.name)}FieldsFrom${spec.from}(v: ${spec.from}): ${fieldsType} {

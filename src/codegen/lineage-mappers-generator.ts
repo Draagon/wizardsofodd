@@ -23,7 +23,8 @@
 //
 // Conversion rules (all derived from @required on the two fields):
 //   forward  source → target fields   optional source onto a nullable column → `?? null`;
-//                                     onto an optional value field → omitted when absent/NULL
+//                                     onto an optional value field → omitted when absent/NULL,
+//                                     or `?? null` when the spec sets `nullForAbsent`
 //   reverse  target row → source      optional source from a nullable column → omitted when NULL
 // Anything else that cannot be typed honestly (a required source field read from
 // a nullable column, an optional source written to a NOT NULL column, a reverse
@@ -40,6 +41,11 @@ export interface LineageMapperSpec {
   to: string;
   /** Also emit the reverse mapper, target row → source value. Entity targets only. */
   reverse?: boolean;
+  /**
+   * Value-object targets only: emit `null` for an absent/NULL optional field instead
+   * of omitting its key, so the mapped object always carries every descended key.
+   */
+  nullForAbsent?: boolean;
 }
 
 interface LineagePair {
@@ -82,9 +88,23 @@ function lcFirst(s: string): string {
 
 function renderForward(spec: LineageMapperSpec, target: MetaObject, pairs: LineagePair[]): string {
   const isEntity = target.isEntity();
+  if (spec.nullForAbsent && isEntity) {
+    throw new Error(
+      `lineage-mappers: nullForAbsent is for value-object targets; ${target.name} is an entity (its columns are already NULL when absent)`,
+    );
+  }
+  const keys = (ps: LineagePair[]) => ps.map((p) => JSON.stringify(p.target.name)).join(" | ");
+  const nullable = spec.nullForAbsent ? pairs.filter((p) => !p.target.isRequired) : [];
+  const present = pairs.filter((p) => !nullable.includes(p));
   // The row type (not <Entity>Insert, whose defaulted columns are optional): every
   // descended field is always set, and a row-typed value is assignable to an insert.
-  const fieldsType = `Pick<${target.name}, ${pairs.map((p) => JSON.stringify(p.target.name)).join(" | ")}>`;
+  // Under nullForAbsent an optional value field (`T | undefined`) is typed `T | null`.
+  const fieldsType = [
+    present.length > 0 ? `Pick<${target.name}, ${keys(present)}>` : "",
+    nullable.length > 0 ? `{ [K in ${keys(nullable)}]: Exclude<${target.name}[K], undefined> | null }` : "",
+  ]
+    .filter((t) => t !== "")
+    .join(" & ");
   const lines = pairs.map(({ source, target: tf }) => {
     const read = `v.${source.name}`;
     if (source.isRequired) return `    ${tf.name}: ${read},`;
@@ -94,8 +114,11 @@ function renderForward(spec: LineageMapperSpec, target: MetaObject, pairs: Linea
       );
     }
     // Onto a nullable column: absent → NULL. Onto an optional value field: absent
-    // (undefined, or a NULL column when the source is an entity row) → key omitted.
-    return isEntity ? `    ${tf.name}: ${read} ?? null,` : `    ...(${read} != null ? { ${tf.name}: ${read} } : {}),`;
+    // (undefined, or a NULL column when the source is an entity row) → key omitted,
+    // or null under nullForAbsent.
+    return isEntity || spec.nullForAbsent
+      ? `    ${tf.name}: ${read} ?? null,`
+      : `    ...(${read} != null ? { ${tf.name}: ${read} } : {}),`;
   });
   return `/** ${spec.from} → the ${target.name} fields that descend from it. */
 export function ${lcFirst(target.name)}FieldsFrom${spec.from}(v: ${spec.from}): ${fieldsType} {

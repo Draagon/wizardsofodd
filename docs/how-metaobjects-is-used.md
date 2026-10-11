@@ -46,7 +46,8 @@ once, reused by `WizardOutput`, `TurnLens`, and `CouncilTurn`. From that one spi
   three can no longer be dropped by a hand-written copy. The same generator builds the public
   `SharedCouncil` view that `GET /c/:slug.json` serves: its declared fields *are* the
   exposure, so `visitorId` stays private and a new `Council` column stays hidden until
-  someone adds it to `SharedCouncil` on purpose.
+  someone adds it to `SharedCouncil` on purpose. That spec sets `nullForAbsent`, so every
+  declared key is always served and a NULL column arrives as `null`.
 
 Rename a field on `WizardOutput`, or on the `WizardUserPayload` that the prompts bind, and the
 drift gate fails across all of it at once — the money shot in the [README](../README.md).

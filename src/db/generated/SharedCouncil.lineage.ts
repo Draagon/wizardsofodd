@@ -8,45 +8,31 @@ import type { SharedCouncil } from "./SharedCouncil";
 /** Council → the SharedCouncil fields that descend from it. */
 export function sharedCouncilFieldsFromCouncil(
   v: Council,
-): Pick<
-  SharedCouncil,
-  | "id"
-  | "question"
-  | "status"
-  | "verdictStance"
-  | "verdictConfidence"
-  | "verdictMarkdown"
-  | "verdictEvidenceQuality"
-  | "dissents"
-  | "verdictAgreements"
-  | "verdictSplits"
-  | "verdictVerifyNote"
-  | "createdAt"
-  | "completedAt"
-> {
+): Pick<SharedCouncil, "id" | "question" | "status" | "createdAt"> & {
+  [K in
+    | "verdictStance"
+    | "verdictConfidence"
+    | "verdictMarkdown"
+    | "verdictEvidenceQuality"
+    | "dissents"
+    | "verdictAgreements"
+    | "verdictSplits"
+    | "verdictVerifyNote"
+    | "completedAt"]: Exclude<SharedCouncil[K], undefined> | null;
+} {
   return {
     id: v.id,
     question: v.question,
     status: v.status,
-    ...(v.verdictStance != null ? { verdictStance: v.verdictStance } : {}),
-    ...(v.verdictConfidence != null
-      ? { verdictConfidence: v.verdictConfidence }
-      : {}),
-    ...(v.verdictMarkdown != null
-      ? { verdictMarkdown: v.verdictMarkdown }
-      : {}),
-    ...(v.verdictEvidenceQuality != null
-      ? { verdictEvidenceQuality: v.verdictEvidenceQuality }
-      : {}),
-    ...(v.dissents != null ? { dissents: v.dissents } : {}),
-    ...(v.verdictAgreements != null
-      ? { verdictAgreements: v.verdictAgreements }
-      : {}),
-    ...(v.verdictSplits != null ? { verdictSplits: v.verdictSplits } : {}),
-    ...(v.verdictVerifyNote != null
-      ? { verdictVerifyNote: v.verdictVerifyNote }
-      : {}),
+    verdictStance: v.verdictStance ?? null,
+    verdictConfidence: v.verdictConfidence ?? null,
+    verdictMarkdown: v.verdictMarkdown ?? null,
+    verdictEvidenceQuality: v.verdictEvidenceQuality ?? null,
+    dissents: v.dissents ?? null,
+    verdictAgreements: v.verdictAgreements ?? null,
+    verdictSplits: v.verdictSplits ?? null,
+    verdictVerifyNote: v.verdictVerifyNote ?? null,
     createdAt: v.createdAt,
-    ...(v.completedAt != null ? { completedAt: v.completedAt } : {}),
+    completedAt: v.completedAt ?? null,
   };
 }

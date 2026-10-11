@@ -4,6 +4,8 @@
 # (src/db/generated/SharedCouncil.lineage.ts). A Council column that is not
 # declared here is never served — visitorId (the rate-limit cookie id) stays
 # private, and a new column stays hidden until someone adds it here on purpose.
+# Every field declared here is always served: a NULL column arrives as null, not
+# as a missing key (the mapper spec in metaobjects.config.ts sets nullForAbsent).
 #
 # Enum fields extend the shared abstract (not Council.<field>) so they keep the
 # shared generated enum module; the generator pairs same-named fields that

@@ -101,8 +101,8 @@ them to `renderShareSync` (a React 18 server render to string), and returns
 HTML with no client hydration. Same `WizardCard` / `VerdictCard` components
 the live SPA uses, so the offline-share view stays byte-identical to the
 streaming one. `GET /c/:slug.json` exposes the same data as JSON for tooling:
-the turns plus the council's public `SharedCouncil` view (no visitor id; NULL
-columns omitted).
+the turns plus the council's public `SharedCouncil` view (no visitor id; every
+declared field is always present, a NULL column as `null`).
 
 ## Request flow: GET / and GET /api/health
 

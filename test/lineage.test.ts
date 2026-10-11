@@ -84,9 +84,14 @@ describe("sharedCouncilFieldsFromCouncil", () => {
     createdAt: 1, completedAt: null,
   };
 
-  it("copies only the declared public fields and omits NULL columns", () => {
+  it("copies only the declared public fields and keeps NULL columns as null", () => {
     const shared = sharedCouncilFieldsFromCouncil(ROW);
-    expect(shared).toStrictEqual({ id: "abc12xyz", question: "Q?", status: "pending", createdAt: 1 });
+    expect(shared).toStrictEqual({
+      id: "abc12xyz", question: "Q?", status: "pending",
+      verdictStance: null, verdictConfidence: null, verdictMarkdown: null, verdictEvidenceQuality: null,
+      dissents: null, verdictAgreements: null, verdictSplits: null, verdictVerifyNote: null,
+      createdAt: 1, completedAt: null,
+    });
     expect(JSON.stringify(shared)).not.toContain("secret-visitor");
   });
 });

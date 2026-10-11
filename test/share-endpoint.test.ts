@@ -105,8 +105,28 @@ describe("GET /c/:slug.json — share data", () => {
       id: "cJsonBBB", question: "Test?", status: "complete",
       verdictStance: "yes", verdictConfidence: 0.5, verdictMarkdown: "Yes.",
       verdictEvidenceQuality: "thin", dissents: [],
+      verdictAgreements: null, verdictSplits: null, verdictVerifyNote: null,
       createdAt: 1, completedAt: 2,
     });
+  });
+
+  it("serves a pending council's unset verdict fields as null, not as missing keys", async () => {
+    const db = getDb(env);
+    await db.insert(schema.councils).values({
+      id: "cJsonCCC", visitorId: "v", question: "Pending?", status: "pending",
+      createdAt: 1,
+    });
+    const res = await SELF.fetch("https://wizardsofodd.com/c/cJsonCCC.json");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { council: Record<string, unknown>; turns: unknown[] };
+    expect(body.council).toStrictEqual({
+      id: "cJsonCCC", question: "Pending?", status: "pending",
+      verdictStance: null, verdictConfidence: null, verdictMarkdown: null,
+      verdictEvidenceQuality: null, dissents: null,
+      verdictAgreements: null, verdictSplits: null, verdictVerifyNote: null,
+      createdAt: 1, completedAt: null,
+    });
+    expect(body.turns).toEqual([]);
   });
 
   it("returns 404 for unknown slug", async () => {

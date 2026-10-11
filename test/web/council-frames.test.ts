@@ -3,7 +3,6 @@ import {
   encodeCouncilFrame,
   isCouncilFrameEvent,
   toCouncilFrame,
-  COUNCIL_EVENTS,
   type CouncilFrame,
   type CouncilFrameOf,
 } from "../../src/web/generated/council-frames";
@@ -34,7 +33,10 @@ describe("encodeCouncilFrame", () => {
 
 describe("isCouncilFrameEvent", () => {
   it("accepts every declared event name", () => {
-    for (const name of Object.values(COUNCIL_EVENTS)) expect(isCouncilFrameEvent(name)).toBe(true);
+    // The eventName of each template.streamFrame under metaobjects/sse-frames/.
+    for (const name of ["council", "wizard", "error", "verdict", "done"]) {
+      expect(isCouncilFrameEvent(name)).toBe(true);
+    }
   });
 
   it("rejects an undeclared event name", () => {

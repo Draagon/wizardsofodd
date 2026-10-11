@@ -111,7 +111,8 @@ export default defineConfig({
     lineageMappers([
       { from: "WizardOutput", to: "CouncilTurn", reverse: true }, // persist a take / rehydrate it
       { from: "WizardOutput", to: "TurnLens" }, // project a prior take into the prompt payload
-      { from: "Council", to: "SharedCouncil" }, // the public /c/:slug.json view (no visitorId)
+      // The public /c/:slug.json view: no visitorId, and a NULL column is served as null.
+      { from: "Council", to: "SharedCouncil", nullForAbsent: true },
     ]),
   ],
 });

@@ -13,3 +13,31 @@ export const SourceLensInsertSchema = z.object({
   url: z.string().min(1),
   snippet: z.string().min(1),
 });
+/**
+ * Metadata constants for the value object SourceLens: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `SourceLens.<field>.rules.maxLength.value`).
+ */
+export const SourceLens = {
+  $entity: "SourceLens",
+  title: {
+    name: "title",
+    label: "Title",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Title is required" },
+  },
+  url: {
+    name: "url",
+    label: "Url",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Url is required" },
+  },
+  snippet: {
+    name: "snippet",
+    label: "Snippet",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Snippet is required" },
+  },
+} as const;

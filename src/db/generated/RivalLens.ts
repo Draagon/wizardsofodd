@@ -11,3 +11,24 @@ export const RivalLensInsertSchema = z.object({
   name: z.string().min(1),
   last: z.boolean(),
 });
+/**
+ * Metadata constants for the value object RivalLens: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `RivalLens.<field>.rules.maxLength.value`).
+ */
+export const RivalLens = {
+  $entity: "RivalLens",
+  name: {
+    name: "name",
+    label: "Name",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Name is required" },
+  },
+  last: {
+    name: "last",
+    label: "Last",
+    view: "checkbox",
+    htmlType: "checkbox",
+    rules: { required: "Last is required" },
+  },
+} as const;

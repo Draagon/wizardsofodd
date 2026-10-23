@@ -11,3 +11,27 @@ export const DissentInsertSchema = z.object({
   wizardId: z.string().min(1).max(32),
   reason: z.string().min(1),
 });
+/**
+ * Metadata constants for the value object Dissent: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `Dissent.<field>.rules.maxLength.value`).
+ */
+export const Dissent = {
+  $entity: "Dissent",
+  wizardId: {
+    name: "wizardId",
+    label: "Wizard Id",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "Wizard Id is required",
+      maxLength: { value: 32, message: "Must be 32 characters or fewer" },
+    },
+  },
+  reason: {
+    name: "reason",
+    label: "Reason",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Reason is required" },
+  },
+} as const;

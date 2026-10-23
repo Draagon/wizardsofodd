@@ -13,3 +13,32 @@ export const CouncilRequestInsertSchema = z.object({
   cfTurnstileToken: z.string().optional(),
   wizardIds: z.array(z.string()).optional(),
 });
+/**
+ * Metadata constants for the value object CouncilRequest: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `CouncilRequest.<field>.rules.maxLength.value`).
+ */
+export const CouncilRequest = {
+  $entity: "CouncilRequest",
+  question: {
+    name: "question",
+    label: "Question",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "Question is required",
+      maxLength: { value: 600, message: "Must be 600 characters or fewer" },
+    },
+  },
+  cfTurnstileToken: {
+    name: "cfTurnstileToken",
+    label: "Cf Turnstile Token",
+    view: "text",
+    htmlType: "text",
+  },
+  wizardIds: {
+    name: "wizardIds",
+    label: "Wizard Ids",
+    view: "text",
+    htmlType: "text",
+  },
+} as const;

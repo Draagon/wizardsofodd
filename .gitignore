@@ -49,3 +49,6 @@ worker-configuration.d.ts
 !/.metaobjects/.gen-state/
 /.metaobjects/.gen-state/*
 !/.metaobjects/.gen-state/.hashes.json
+
+# Generated documentation site (docs-site generator; rebuilt by the site deploy)
+docs/generated/

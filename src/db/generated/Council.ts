@@ -207,6 +207,7 @@ export const Council = {
     label: "Verdict Confidence",
     view: "number",
     htmlType: "number",
+    step: "any",
   },
   verdictMarkdown: {
     name: "verdictMarkdown",

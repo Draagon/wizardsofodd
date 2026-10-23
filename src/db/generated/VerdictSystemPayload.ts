@@ -10,3 +10,17 @@ export interface VerdictSystemPayload {
 export const VerdictSystemPayloadInsertSchema = z.object({
   roster: z.array(RosterLensInsertSchema),
 });
+/**
+ * Metadata constants for the value object VerdictSystemPayload: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `VerdictSystemPayload.<field>.rules.maxLength.value`).
+ */
+export const VerdictSystemPayload = {
+  $entity: "VerdictSystemPayload",
+  roster: {
+    name: "roster",
+    label: "Roster",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Roster is required" },
+  },
+} as const;

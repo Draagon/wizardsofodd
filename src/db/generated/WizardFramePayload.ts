@@ -14,3 +14,37 @@ export const WizardFramePayloadInsertSchema = z.object({
   wizardName: z.string().min(1).max(128),
   take: WizardOutputInsertSchema,
 });
+/**
+ * Metadata constants for the value object WizardFramePayload: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `WizardFramePayload.<field>.rules.maxLength.value`).
+ */
+export const WizardFramePayload = {
+  $entity: "WizardFramePayload",
+  wizardId: {
+    name: "wizardId",
+    label: "Wizard Id",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "Wizard Id is required",
+      maxLength: { value: 32, message: "Must be 32 characters or fewer" },
+    },
+  },
+  wizardName: {
+    name: "wizardName",
+    label: "Wizard Name",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "Wizard Name is required",
+      maxLength: { value: 128, message: "Must be 128 characters or fewer" },
+    },
+  },
+  take: {
+    name: "take",
+    label: "Take",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Take is required" },
+  },
+} as const;

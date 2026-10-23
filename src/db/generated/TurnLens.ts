@@ -21,3 +21,68 @@ export const TurnLensInsertSchema = z.object({
   oneLineSummary: z.string().min(1).max(140),
   confidence: z.number().min(0).max(1),
 });
+/**
+ * Metadata constants for the value object TurnLens: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `TurnLens.<field>.rules.maxLength.value`).
+ */
+export const TurnLens = {
+  $entity: "TurnLens",
+  wizardId: {
+    name: "wizardId",
+    label: "Wizard Id",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "Wizard Id is required",
+      maxLength: { value: 32, message: "Must be 32 characters or fewer" },
+    },
+  },
+  wizardName: {
+    name: "wizardName",
+    label: "Wizard Name",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "Wizard Name is required",
+      maxLength: { value: 128, message: "Must be 128 characters or fewer" },
+    },
+  },
+  stance: {
+    name: "stance",
+    label: "Stance",
+    view: "dropdown",
+    rules: { required: "Stance is required" },
+    options: [
+      "supports",
+      "opposes",
+      "complicates",
+      "reframes",
+      "abstains",
+    ] as const,
+  },
+  takeMarkdown: {
+    name: "takeMarkdown",
+    label: "Take Markdown",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Take Markdown is required" },
+  },
+  oneLineSummary: {
+    name: "oneLineSummary",
+    label: "One Line Summary",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "One Line Summary is required",
+      maxLength: { value: 140, message: "Must be 140 characters or fewer" },
+    },
+  },
+  confidence: {
+    name: "confidence",
+    label: "Confidence",
+    view: "number",
+    htmlType: "number",
+    step: "any",
+    rules: { required: "Confidence is required" },
+  },
+} as const;

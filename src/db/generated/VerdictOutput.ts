@@ -32,3 +32,59 @@ export const VerdictOutputInsertSchema = z.object({
   splits: z.array(z.string()).optional(),
   verifyNote: z.string().optional(),
 });
+/**
+ * Metadata constants for the value object VerdictOutput: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `VerdictOutput.<field>.rules.maxLength.value`).
+ */
+export const VerdictOutput = {
+  $entity: "VerdictOutput",
+  stance: {
+    name: "stance",
+    label: "Stance",
+    view: "dropdown",
+    rules: { required: "Stance is required" },
+    options: ["yes", "no", "it_depends", "unanswerable"] as const,
+  },
+  confidence: {
+    name: "confidence",
+    label: "Confidence",
+    view: "number",
+    htmlType: "number",
+    step: "any",
+    rules: { required: "Confidence is required" },
+  },
+  takeMarkdown: {
+    name: "takeMarkdown",
+    label: "Take Markdown",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Take Markdown is required" },
+  },
+  dissents: {
+    name: "dissents",
+    label: "Dissents",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Dissents is required" },
+  },
+  evidenceQuality: {
+    name: "evidenceQuality",
+    label: "Evidence Quality",
+    view: "dropdown",
+    rules: { required: "Evidence Quality is required" },
+    options: ["strong", "mixed", "thin", "none"] as const,
+  },
+  agreements: {
+    name: "agreements",
+    label: "Agreements",
+    view: "text",
+    htmlType: "text",
+  },
+  splits: { name: "splits", label: "Splits", view: "text", htmlType: "text" },
+  verifyNote: {
+    name: "verifyNote",
+    label: "Verify Note",
+    view: "text",
+    htmlType: "text",
+  },
+} as const;

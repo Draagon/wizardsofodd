@@ -53,3 +53,101 @@ export const SharedCouncilInsertSchema = z.object({
   createdAt: z.number().int(),
   completedAt: z.number().int().optional(),
 });
+/**
+ * Metadata constants for the value object SharedCouncil: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `SharedCouncil.<field>.rules.maxLength.value`).
+ */
+export const SharedCouncil = {
+  $entity: "SharedCouncil",
+  id: {
+    name: "id",
+    label: "Id",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "Id is required",
+      pattern: {
+        value:
+          /^[abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/,
+        message: "Invalid format",
+      },
+      maxLength: { value: 8, message: "Must be 8 characters or fewer" },
+    },
+  },
+  question: {
+    name: "question",
+    label: "Question",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Question is required" },
+  },
+  status: {
+    name: "status",
+    label: "Status",
+    view: "dropdown",
+    rules: { required: "Status is required" },
+    options: ["pending", "partial", "complete", "error"] as const,
+  },
+  verdictStance: {
+    name: "verdictStance",
+    label: "Verdict Stance",
+    view: "dropdown",
+    options: ["yes", "no", "it_depends", "unanswerable"] as const,
+  },
+  verdictConfidence: {
+    name: "verdictConfidence",
+    label: "Verdict Confidence",
+    view: "number",
+    htmlType: "number",
+    step: "any",
+  },
+  verdictMarkdown: {
+    name: "verdictMarkdown",
+    label: "Verdict Markdown",
+    view: "text",
+    htmlType: "text",
+  },
+  verdictEvidenceQuality: {
+    name: "verdictEvidenceQuality",
+    label: "Verdict Evidence Quality",
+    view: "dropdown",
+    options: ["strong", "mixed", "thin", "none"] as const,
+  },
+  dissents: {
+    name: "dissents",
+    label: "Dissents",
+    view: "text",
+    htmlType: "text",
+  },
+  verdictAgreements: {
+    name: "verdictAgreements",
+    label: "Verdict Agreements",
+    view: "text",
+    htmlType: "text",
+  },
+  verdictSplits: {
+    name: "verdictSplits",
+    label: "Verdict Splits",
+    view: "text",
+    htmlType: "text",
+  },
+  verdictVerifyNote: {
+    name: "verdictVerifyNote",
+    label: "Verdict Verify Note",
+    view: "text",
+    htmlType: "text",
+  },
+  createdAt: {
+    name: "createdAt",
+    label: "Created At",
+    view: "number",
+    htmlType: "number",
+    rules: { required: "Created At is required" },
+  },
+  completedAt: {
+    name: "completedAt",
+    label: "Completed At",
+    view: "number",
+    htmlType: "number",
+  },
+} as const;

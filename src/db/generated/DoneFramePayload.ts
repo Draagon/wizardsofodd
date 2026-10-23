@@ -7,3 +7,17 @@ export interface DoneFramePayload {
   ok: boolean;
 }
 export const DoneFramePayloadInsertSchema = z.object({ ok: z.boolean() });
+/**
+ * Metadata constants for the value object DoneFramePayload: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `DoneFramePayload.<field>.rules.maxLength.value`).
+ */
+export const DoneFramePayload = {
+  $entity: "DoneFramePayload",
+  ok: {
+    name: "ok",
+    label: "Ok",
+    view: "checkbox",
+    htmlType: "checkbox",
+    rules: { required: "Ok is required" },
+  },
+} as const;

@@ -237,6 +237,7 @@ export const CouncilTurn = {
     label: "Confidence",
     view: "number",
     htmlType: "number",
+    step: "any",
     rules: { required: "Confidence is required" },
   },
   keyClaims: {

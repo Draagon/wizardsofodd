@@ -19,3 +19,38 @@ export const WizardUserPayloadInsertSchema = z.object({
   sources: z.array(SourceLensInsertSchema).optional(),
   hasSources: z.boolean(),
 });
+/**
+ * Metadata constants for the value object WizardUserPayload: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `WizardUserPayload.<field>.rules.maxLength.value`).
+ */
+export const WizardUserPayload = {
+  $entity: "WizardUserPayload",
+  question: {
+    name: "question",
+    label: "Question",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Question is required" },
+  },
+  prior: { name: "prior", label: "Prior", view: "text", htmlType: "text" },
+  hasPrior: {
+    name: "hasPrior",
+    label: "Has Prior",
+    view: "checkbox",
+    htmlType: "checkbox",
+    rules: { required: "Has Prior is required" },
+  },
+  sources: {
+    name: "sources",
+    label: "Sources",
+    view: "text",
+    htmlType: "text",
+  },
+  hasSources: {
+    name: "hasSources",
+    label: "Has Sources",
+    view: "checkbox",
+    htmlType: "checkbox",
+    rules: { required: "Has Sources is required" },
+  },
+} as const;

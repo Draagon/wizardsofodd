@@ -11,3 +11,24 @@ export const RosterLensInsertSchema = z.object({
   fullName: z.string().min(1),
   last: z.boolean(),
 });
+/**
+ * Metadata constants for the value object RosterLens: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `RosterLens.<field>.rules.maxLength.value`).
+ */
+export const RosterLens = {
+  $entity: "RosterLens",
+  fullName: {
+    name: "fullName",
+    label: "Full Name",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Full Name is required" },
+  },
+  last: {
+    name: "last",
+    label: "Last",
+    view: "checkbox",
+    htmlType: "checkbox",
+    rules: { required: "Last is required" },
+  },
+} as const;

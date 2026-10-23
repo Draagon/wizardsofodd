@@ -25,3 +25,82 @@ export const WizardInsertSchema = z.object({
   techniqueBlurb: z.string().min(1).max(280),
   defaultEnabled: z.boolean(),
 });
+/**
+ * Metadata constants for the value object Wizard: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `Wizard.<field>.rules.maxLength.value`).
+ */
+export const Wizard = {
+  $entity: "Wizard",
+  id: {
+    name: "id",
+    label: "Id",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "Id is required",
+      maxLength: { value: 32, message: "Must be 32 characters or fewer" },
+    },
+  },
+  name: {
+    name: "name",
+    label: "Name",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "Name is required",
+      maxLength: { value: 128, message: "Must be 128 characters or fewer" },
+    },
+  },
+  title: {
+    name: "title",
+    label: "Title",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "Title is required",
+      maxLength: { value: 128, message: "Must be 128 characters or fewer" },
+    },
+  },
+  technique: {
+    name: "technique",
+    label: "Technique",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "Technique is required",
+      maxLength: { value: 256, message: "Must be 256 characters or fewer" },
+    },
+  },
+  bickersWith: {
+    name: "bickersWith",
+    label: "Bickers With",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Bickers With is required" },
+  },
+  usesSearch: {
+    name: "usesSearch",
+    label: "Uses Search",
+    view: "checkbox",
+    htmlType: "checkbox",
+    rules: { required: "Uses Search is required" },
+  },
+  order: { name: "order", label: "Order", view: "number", htmlType: "number" },
+  techniqueBlurb: {
+    name: "techniqueBlurb",
+    label: "Technique Blurb",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "Technique Blurb is required",
+      maxLength: { value: 280, message: "Must be 280 characters or fewer" },
+    },
+  },
+  defaultEnabled: {
+    name: "defaultEnabled",
+    label: "Default Enabled",
+    view: "checkbox",
+    htmlType: "checkbox",
+    rules: { required: "Default Enabled is required" },
+  },
+} as const;

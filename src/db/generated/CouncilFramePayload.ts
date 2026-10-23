@@ -9,3 +9,17 @@ export interface CouncilFramePayload {
 export const CouncilFramePayloadInsertSchema = z.object({
   id: z.string().min(1),
 });
+/**
+ * Metadata constants for the value object CouncilFramePayload: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `CouncilFramePayload.<field>.rules.maxLength.value`).
+ */
+export const CouncilFramePayload = {
+  $entity: "CouncilFramePayload",
+  id: {
+    name: "id",
+    label: "Id",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Id is required" },
+  },
+} as const;

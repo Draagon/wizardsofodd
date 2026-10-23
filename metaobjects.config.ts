@@ -21,7 +21,7 @@ import { barrel } from "./codegen/generators/barrel";
 // exported) are both correctly imported from the package here. Don't cargo-cult
 // "own everything" — own a copy when you intend to change its emit; this project
 // changed entity/queries/barrel and has no reason to fork the names artifact.
-import { namesFile, promptRender } from "@metaobjectsdev/codegen-ts/generators";
+import { docsSiteFile, namesFile, promptRender } from "@metaobjectsdev/codegen-ts/generators";
 import { mustacheTemplates } from "./src/codegen/mustache-templates-generator";
 import { wizardData } from "./src/codegen/wizard-data-generator";
 import { wizardRegistry } from "./src/codegen/wizard-registry-generator";
@@ -83,6 +83,11 @@ export default defineConfig({
     personas: { outDir: "./src/personas/generated" },
     llm: { outDir: "./src/llm/generated" },
     web: { outDir: "./src/web/generated" },
+    // Documentation target (every docs factory writes here unless given another `target`).
+    // The metaobjects.dev site deploy clones this repo and runs
+    // `meta gen --generators docs-site`; the site lands in ./docs/generated/site. The
+    // directory is git-ignored build output, so `meta verify --codegen` does not compare it.
+    docs: { outDir: "./docs/generated" },
   },
   generators: [
     entityFile(),
@@ -114,5 +119,10 @@ export default defineConfig({
       // The public /c/:slug.json view: no visitorId, and a NULL column is served as null.
       { from: "Council", to: "SharedCouncil", nullForAbsent: true },
     ]),
+    // The browsable docs site for the model (→ docs target, site/). `prompts` points at
+    // the external Mustache sources under data/ (outside metaobjects/) so the site shows
+    // prompt TEXT, not just the declarations. `title` is pinned: it defaults to the checkout's
+    // directory name, which would make the site differ from one clone to the next.
+    docsSiteFile({ prompts: "data/templates", title: "The Wizards of Odd" }),
   ],
 });

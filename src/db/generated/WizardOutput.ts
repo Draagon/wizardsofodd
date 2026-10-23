@@ -22,3 +22,61 @@ export const WizardOutputInsertSchema = z.object({
   keyClaims: z.array(z.string()),
   citations: z.array(SourceLensInsertSchema).optional(),
 });
+/**
+ * Metadata constants for the value object WizardOutput: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `WizardOutput.<field>.rules.maxLength.value`).
+ */
+export const WizardOutput = {
+  $entity: "WizardOutput",
+  stance: {
+    name: "stance",
+    label: "Stance",
+    view: "dropdown",
+    rules: { required: "Stance is required" },
+    options: [
+      "supports",
+      "opposes",
+      "complicates",
+      "reframes",
+      "abstains",
+    ] as const,
+  },
+  takeMarkdown: {
+    name: "takeMarkdown",
+    label: "Take Markdown",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Take Markdown is required" },
+  },
+  oneLineSummary: {
+    name: "oneLineSummary",
+    label: "One Line Summary",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "One Line Summary is required",
+      maxLength: { value: 140, message: "Must be 140 characters or fewer" },
+    },
+  },
+  confidence: {
+    name: "confidence",
+    label: "Confidence",
+    view: "number",
+    htmlType: "number",
+    step: "any",
+    rules: { required: "Confidence is required" },
+  },
+  keyClaims: {
+    name: "keyClaims",
+    label: "Key Claims",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Key Claims is required" },
+  },
+  citations: {
+    name: "citations",
+    label: "Citations",
+    view: "text",
+    htmlType: "text",
+  },
+} as const;

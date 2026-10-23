@@ -14,3 +14,25 @@ export const WizardSystemPayloadInsertSchema = z.object({
   rivals: z.array(RivalLensInsertSchema).optional(),
   turnNumber: z.number().int(),
 });
+/**
+ * Metadata constants for the value object WizardSystemPayload: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `WizardSystemPayload.<field>.rules.maxLength.value`).
+ */
+export const WizardSystemPayload = {
+  $entity: "WizardSystemPayload",
+  hasRivals: {
+    name: "hasRivals",
+    label: "Has Rivals",
+    view: "checkbox",
+    htmlType: "checkbox",
+    rules: { required: "Has Rivals is required" },
+  },
+  rivals: { name: "rivals", label: "Rivals", view: "text", htmlType: "text" },
+  turnNumber: {
+    name: "turnNumber",
+    label: "Turn Number",
+    view: "number",
+    htmlType: "number",
+    rules: { required: "Turn Number is required" },
+  },
+} as const;

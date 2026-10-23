@@ -13,3 +13,37 @@ export const ErrorFramePayloadInsertSchema = z.object({
   wizardName: z.string().min(1).max(128),
   reason: z.string().min(1),
 });
+/**
+ * Metadata constants for the value object ErrorFramePayload: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `ErrorFramePayload.<field>.rules.maxLength.value`).
+ */
+export const ErrorFramePayload = {
+  $entity: "ErrorFramePayload",
+  wizardId: {
+    name: "wizardId",
+    label: "Wizard Id",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "Wizard Id is required",
+      maxLength: { value: 32, message: "Must be 32 characters or fewer" },
+    },
+  },
+  wizardName: {
+    name: "wizardName",
+    label: "Wizard Name",
+    view: "text",
+    htmlType: "text",
+    rules: {
+      required: "Wizard Name is required",
+      maxLength: { value: 128, message: "Must be 128 characters or fewer" },
+    },
+  },
+  reason: {
+    name: "reason",
+    label: "Reason",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Reason is required" },
+  },
+} as const;

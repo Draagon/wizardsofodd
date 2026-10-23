@@ -10,3 +10,17 @@ export interface VerdictFramePayload {
 export const VerdictFramePayloadInsertSchema = z.object({
   verdict: VerdictOutputInsertSchema,
 });
+/**
+ * Metadata constants for the value object VerdictFramePayload: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `VerdictFramePayload.<field>.rules.maxLength.value`).
+ */
+export const VerdictFramePayload = {
+  $entity: "VerdictFramePayload",
+  verdict: {
+    name: "verdict",
+    label: "Verdict",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Verdict is required" },
+  },
+} as const;

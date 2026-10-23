@@ -12,3 +12,18 @@ export const VerdictUserPayloadInsertSchema = z.object({
   question: z.string().min(1),
   prior: z.array(TurnLensInsertSchema).optional(),
 });
+/**
+ * Metadata constants for the value object VerdictUserPayload: each field's name, label, view and the
+ * validation rules derived from its validator children (e.g. `VerdictUserPayload.<field>.rules.maxLength.value`).
+ */
+export const VerdictUserPayload = {
+  $entity: "VerdictUserPayload",
+  question: {
+    name: "question",
+    label: "Question",
+    view: "text",
+    htmlType: "text",
+    rules: { required: "Question is required" },
+  },
+  prior: { name: "prior", label: "Prior", view: "text", htmlType: "text" },
+} as const;

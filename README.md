@@ -51,18 +51,16 @@ meta: [brikUser] (prompt) ERR_VAR_NOT_ON_PAYLOAD: question
 meta: [dominoUser] (prompt) ERR_VAR_NOT_ON_PAYLOAD: question
 …  (all 10 wizard prompts)
 meta: meta verify — 10 drift error(s) across 22 template(s).
-meta: meta verify — codegen drift (2 file(s) differ from a fresh regen):
+meta: meta verify — codegen drift (1 file(s) differ from a fresh regen):
 meta:   ~ src/db/generated/WizardUserPayload.ts (committed content differs from a fresh regen)
-meta:   ~ src/render/generated/prompts.ts (committed content differs from a fresh regen)
 ```
 
 **The ten `ERR_VAR_NOT_ON_PAYLOAD` lines are the point.** Each is a Mustache prompt that
 still binds `{{question}}` after the payload stopped having one, and `npx tsc -b` passes
 on the same tree. Run `npm run gen:db` and `tsc` does start failing, but only on the two
 TypeScript call sites that build the payload; fix those and `tsc` is green again while
-`demo:drift` still reports all ten templates. The two codegen lines below them (the
-Zod/DB payload schema and the typed render handle) are the stale-generated-code gate,
-which disappears once you regenerate. The CI workflow
+`demo:drift` still reports all ten templates. The codegen line below them (the
+Zod/DB payload schema) is the stale-generated-code gate, which disappears once you regenerate. The CI workflow
 ([`.github/workflows/meta-verify.yml`](.github/workflows/meta-verify.yml)) runs this same
 gate on every PR.
 

@@ -2,18 +2,17 @@ import type { SystemBlock } from "../llm/anthropic";
 import type { SearchResult } from "../llm/web-search";
 import { WIZARD_REGISTRY } from "../personas/generated/registry";
 import { templateProvider } from "../render/generated/templates";
-import type { WizardUserPayload } from "../db/generated/WizardUserPayload";
+import { EvidenceGradeEnum, GuildVerdictEnum } from "../db/generated/enums";
 import {
   buildWizardSystem,
+  buildWizardUserPayload,
   buildVerdictSystem,
   buildVerdictMessages,
   fullName,
-  toTurnLens,
-  toSourceLens,
   type PriorTurn,
 } from "./prompts";
 import { callEmitWizardTake, callEmitVerdict } from "../llm/generated/toolcalls";
-import type { CouncilFrameOf } from "../web/generated/council-frames";
+import { COUNCIL_EVENTS, type CouncilFrameOf } from "../web/generated/council-frames";
 
 /**
  * What convene() yields: the council's own stream frames (the generated union
@@ -86,26 +85,18 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
       // any handle would produce the same string — but routing through the
       // entry's own renderer is the architecturally honest path: adding a
       // wizard with a divergent user template requires zero orchestrator changes.
-      // PriorTurn/SearchResult (internal) project to the codegen'd TurnLens/
-      // SourceLens shapes via the shared boundary helpers (toTurnLens/toSourceLens),
-      // so this projection stays in lock-step with the message builders in prompts.ts.
-      const userPayload: WizardUserPayload = {
-        question,
-        prior: prior.map(toTurnLens),
-        hasPrior: prior.length > 0,
-        sources: sources.map(toSourceLens),
-        hasSources: sources.length > 0,
-      };
-      const userContent = entry.renderUser(userPayload, templateProvider).trimEnd();
+      // The payload comes from the same builder buildWizardMessages uses, so the
+      // byte-stability snapshot covers what production sends.
+      const userContent = entry.renderUser(buildWizardUserPayload(question, prior, sources), templateProvider).trimEnd();
 
       const take = await callEmitWizardTake({
         apiKey, fetchImpl, model, system: wizardSystem, messages: [{ role: "user", content: userContent }],
       });
       prior.push({ persona: wizard, take });
-      yield { event: "wizard", data: { wizardId: wizard.id, wizardName: name, take } };
+      yield { event: COUNCIL_EVENTS.wizard, data: { wizardId: wizard.id, wizardName: name, take } };
     } catch {
       yield {
-        event: "error",
+        event: COUNCIL_EVENTS.error,
         data: { wizardId: wizard.id, wizardName: name, reason: `${wizard.name} is lost in thought and does not answer.` },
       };
     }
@@ -117,14 +108,14 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
   // "nobody answered" verdict instead, skipping the LLM round-trip.
   if (prior.length === 0) {
     yield {
-      event: "verdict",
+      event: COUNCIL_EVENTS.verdict,
       data: { verdict: {
-        stance: "unanswerable",
+        stance: GuildVerdictEnum.enum.unanswerable,
         confidence: 0,
         takeMarkdown:
           "No wizard was able to answer this time, so the Guild has no verdict to offer. Please try again in a moment.",
         dissents: [],
-        evidenceQuality: "none",
+        evidenceQuality: EvidenceGradeEnum.enum.none,
         agreements: [],
         splits: [],
         verifyNote: "",
@@ -137,7 +128,7 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
   const vMsgs = buildVerdictMessages(question, prior);
   try {
     const verdict = await callEmitVerdict({ apiKey, fetchImpl, model, system: vSys, messages: vMsgs });
-    yield { event: "verdict", data: { verdict } };
+    yield { event: COUNCIL_EVENTS.verdict, data: { verdict } };
   } catch {
     // A malformed verdict is absorbed by emitVerdict's canned fallback inside
     // the wrapper, so anything reaching here is a transport/API failure (rate
@@ -145,14 +136,14 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
     // stream — and worded distinctly from the fallback's "could not converge"
     // deliberation outcome, since the wizards' takes above are still valid.
     yield {
-      event: "verdict",
+      event: COUNCIL_EVENTS.verdict,
       data: { verdict: {
-        stance: "unanswerable",
+        stance: GuildVerdictEnum.enum.unanswerable,
         confidence: 0,
         takeMarkdown:
           "The wizards' takes are above, but the Guild hit a temporary problem before it could synthesize a verdict. Please try again in a moment.",
         dissents: [],
-        evidenceQuality: "none",
+        evidenceQuality: EvidenceGradeEnum.enum.none,
         agreements: [],
         splits: [],
         verifyNote: "",

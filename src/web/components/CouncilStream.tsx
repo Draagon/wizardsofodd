@@ -1,4 +1,4 @@
-import type { StreamState } from "../hooks/useCouncilStream";
+import { STREAM_STATUS, type StreamState } from "../hooks/useCouncilStream";
 import { WizardCard } from "./WizardCard";
 import { VerdictCard } from "./VerdictCard";
 import { WIZARDS } from "../../personas/generated/wizards";
@@ -17,7 +17,7 @@ export function CouncilStream({ state }: Props) {
       ))}
       {state.verdict ? <VerdictCard verdict={state.verdict} nameOf={nameOf} /> : null}
 
-      {state.status === "error" ? (
+      {state.status === STREAM_STATUS.error ? (
         <article className="card card-stream-error"><p>The tower went dark: {state.errorMessage}</p></article>
       ) : null}
     </section>

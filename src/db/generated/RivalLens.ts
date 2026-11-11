@@ -8,7 +8,7 @@ export interface RivalLens {
   last: boolean;
 }
 export const RivalLensInsertSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).max(128),
   last: z.boolean(),
 });
 /**
@@ -22,7 +22,10 @@ export const RivalLens = {
     label: "Name",
     view: "text",
     htmlType: "text",
-    rules: { required: "Name is required" },
+    rules: {
+      required: "Name is required",
+      maxLength: { value: 128, message: "Must be 128 characters or fewer" },
+    },
   },
   last: {
     name: "last",

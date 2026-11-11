@@ -10,8 +10,7 @@ metadata:
               table: council_turns
           - field.string:
               name: councilId
-              maxLength: 16
-              required: true
+              extends: Council.id   # same width and slug rule as the key it references
           - field.int:
               name: ordinal
               required: true

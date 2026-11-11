@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { schema, type Db } from "./client";
 import { newSlug } from "./slug";
 import type { WizardFramePayload } from "./generated/WizardFramePayload";
@@ -6,10 +6,12 @@ import type { ErrorFramePayload } from "./generated/ErrorFramePayload";
 import type { VerdictOutput } from "./generated/VerdictOutput";
 // Reads are generated (findCouncilWithTurns in ./generated/Council.queries, from
 // Council's `turns` composition). The bespoke writes below stay hand-written,
-// but OVER the generated row types (Council / CouncilTurn).
-import type { Council } from "./generated/Council";
-import { councilTurnFieldsFromWizardOutput } from "./generated/CouncilTurn.lineage";
+// but OVER the generated Drizzle tables, enum constants and lineage mappers: no
+// raw SQL, and no column name or enum value spelled by hand.
 import { CouncilStatusEnum } from "./generated/Council";
+import { CouncilTurnInsertSchema, CouncilTurnKindEnum, WizardStanceEnum } from "./generated/CouncilTurn";
+import { councilTurnFieldsFromWizardOutput } from "./generated/CouncilTurn.lineage";
+import { councilFieldsFromVerdictOutput } from "./generated/Council.lineage";
 
 const { councils, councilTurns } = schema;
 
@@ -48,9 +50,22 @@ export type RecordWizardTurnArgs = WizardFramePayload & { ordinal: number };
 /** An `error` stream frame's payload, plus the turn's position in the council. */
 export type RecordErrorTurnArgs = ErrorFramePayload & { ordinal: number };
 
-/** Recording any turn advances the council from 'pending' to 'partial'. */
+/**
+ * The lifecycle is pending -> partial -> complete | error, and complete and error
+ * are final. Every status write is conditional on the council still being open,
+ * so a late write can never move a finished council back (a turn recorded after
+ * the verdict) or overwrite it (an error raised after the verdict was stored).
+ */
+const OPEN_STATUSES = [CouncilStatusEnum.enum.pending, CouncilStatusEnum.enum.partial];
+
+/** Matches the council only while it is still open. */
+function openCouncil(councilId: string) {
+  return and(eq(councils.id, councilId), inArray(councils.status, OPEN_STATUSES));
+}
+
+/** Recording any turn advances an open council from 'pending' to 'partial'. */
 async function advanceCouncilToPartial(db: Db, councilId: string): Promise<void> {
-  await db.update(councils).set({ status: CouncilStatusEnum.enum.partial }).where(eq(councils.id, councilId));
+  await db.update(councils).set({ status: CouncilStatusEnum.enum.partial }).where(openCouncil(councilId));
 }
 
 /** Inserts a wizard turn (structured) and flips council.status to 'partial'. */
@@ -61,11 +76,18 @@ export async function recordWizardTurn(db: Db, councilId: string, t: RecordWizar
     round: 0, // vestigial column (follow-up rounds removed); see meta-council-turn.yaml
     wizardId: t.wizardId,
     wizardName: t.wizardName,
-    kind: "wizard",
+    kind: CouncilTurnKindEnum.enum.wizard,
     ...councilTurnFieldsFromWizardOutput(t.take),
   });
   await advanceCouncilToPartial(db, councilId);
 }
+
+// An error turn's summary is its reason, cut to the column's declared cap.
+const SUMMARY_MAX: number = (() => {
+  const max = CouncilTurnInsertSchema.shape.oneLineSummary.maxLength;
+  if (max === null) throw new Error("CouncilTurn.oneLineSummary must declare a maxLength");
+  return max;
+})();
 
 /** Inserts an error turn (wizard's response could not be parsed). */
 export async function recordErrorTurn(db: Db, councilId: string, t: RecordErrorTurnArgs): Promise<void> {
@@ -75,10 +97,10 @@ export async function recordErrorTurn(db: Db, councilId: string, t: RecordErrorT
     round: 0, // vestigial column (follow-up rounds removed); see meta-council-turn.yaml
     wizardId: t.wizardId,
     wizardName: t.wizardName,
-    kind: "error",
-    stance: "abstains",
+    kind: CouncilTurnKindEnum.enum.error,
+    stance: WizardStanceEnum.enum.abstains,
     takeMarkdown: t.reason,
-    oneLineSummary: t.reason.slice(0, 140),
+    oneLineSummary: t.reason.slice(0, SUMMARY_MAX),
     confidence: 0,
     keyClaims: [],
     citations: null,
@@ -86,47 +108,18 @@ export async function recordErrorTurn(db: Db, councilId: string, t: RecordErrorT
   await advanceCouncilToPartial(db, councilId);
 }
 
-/** The verdict columns for a council's verdict. */
-function verdictColumns(v: VerdictOutput) {
-  return {
-    verdictStance: v.stance,
-    verdictConfidence: v.confidence,
-    verdictMarkdown: v.takeMarkdown,
-    verdictEvidenceQuality: v.evidenceQuality,
-    dissents: v.dissents,
-    verdictAgreements: v.agreements ?? null,
-    verdictSplits: v.splits ?? null,
-    verdictVerifyNote: v.verifyNote ?? null,
-  };
-}
-
-/** Marks status=complete with the structured verdict + completion time. */
+/** Marks an open council complete with the structured verdict + completion time. */
 export async function finalizeCouncil(db: Db, councilId: string, v: VerdictOutput): Promise<void> {
   await db
     .update(councils)
-    .set({ status: CouncilStatusEnum.enum.complete, ...verdictColumns(v), completedAt: Date.now() })
-    .where(eq(councils.id, councilId));
+    .set({ status: CouncilStatusEnum.enum.complete, ...councilFieldsFromVerdictOutput(v), completedAt: Date.now() })
+    .where(openCouncil(councilId));
 }
 
-/** Marks status=error (stream-level catastrophic failure). */
+/** Marks an open council error (stream-level catastrophic failure). A finished council is left as it is. */
 export async function setCouncilError(db: Db, councilId: string): Promise<void> {
   await db
     .update(councils)
-    .set({ status: "error", completedAt: Date.now() })
-    .where(eq(councils.id, councilId));
-}
-
-/** Rebuild a VerdictOutput from a council row's verdict columns (null → absent/empty). */
-export function councilVerdict(c: Council): VerdictOutput | null {
-  if (!c.verdictStance || !c.verdictMarkdown) return null;
-  return {
-    stance: c.verdictStance,
-    confidence: c.verdictConfidence ?? 0,
-    takeMarkdown: c.verdictMarkdown,
-    dissents: c.dissents ?? [],
-    evidenceQuality: c.verdictEvidenceQuality ?? "none",
-    agreements: c.verdictAgreements ?? [],
-    splits: c.verdictSplits ?? [],
-    ...(c.verdictVerifyNote ? { verifyNote: c.verdictVerifyNote } : {}),
-  };
+    .set({ status: CouncilStatusEnum.enum.error, completedAt: Date.now() })
+    .where(openCouncil(councilId));
 }

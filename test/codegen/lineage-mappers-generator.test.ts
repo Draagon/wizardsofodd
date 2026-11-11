@@ -66,3 +66,100 @@ describe("lineageMappers generator", () => {
     expect(files.map((f) => f.path)).toEqual(["NoteTitle.lineage.ts"]);
   });
 });
+
+// A persisted copy whose columns are nullable (a row has no note until one is
+// stored), with names that differ from the owner's, plus a value view of the row.
+const ROW_MODEL = `
+metadata:
+  package: demo
+  children:
+    - field.enum:
+        name: mood
+        abstract: true
+        values: [calm, cross]
+    - object.value:
+        name: Note
+        children:
+          - field.string:
+              name: title
+              required: true
+          - field.enum:
+              name: mood
+              extends: mood
+              required: true
+          - field.string:
+              name: body
+    - object.entity:
+        name: NoteRow
+        children:
+          - source.rdb:
+              table: note_rows
+          - field.string:
+              name: id
+              required: true
+          - field.string:
+              name: noteTitle
+              extends: Note.title
+              required: false
+          - field.enum:
+              name: noteMood
+              extends: Note.mood
+              required: false
+          - field.string:
+              name: noteBody
+              extends: Note.body
+          - identity.primary:
+              fields: [id]
+    - object.value:
+        name: NoteCard
+        children:
+          - field.string:
+              name: noteTitle
+              extends: NoteRow.noteTitle
+          - field.enum:
+              name: noteMood
+              extends: mood
+`;
+
+async function generateRow(specs: LineageMapperSpec[]) {
+  const { root, errors } = await MetaDataLoader.fromString(ROW_MODEL, "yaml");
+  expect(errors).toEqual([]);
+  const ctx: GenContext = {
+    entities: root.children().filter(isMetaObject),
+    loadedRoot: root,
+    matches: () => true,
+    config: { outDir: "generated", extStyle: "none", dbImport: "./db", dialect: "sqlite" },
+    warn: () => {},
+  };
+  return lineageMappers(specs).generate(ctx);
+}
+
+describe("lineageMappers generator: extends chains and nullable rows", () => {
+  it("pairs fields by their extends link even when the names differ", async () => {
+    const [file] = await generateRow([{ from: "Note", to: "NoteRow" }]);
+    expect(file.content).toContain("noteTitle: v.title,");
+    expect(file.content).toContain("noteMood: v.mood,");
+    expect(file.content).toContain("noteBody: v.body ?? null,");
+  });
+
+  it("pairs a same-named enum whose chain ends at the same abstract, through a concrete parent", async () => {
+    const [file] = await generateRow([{ from: "NoteRow", to: "NoteCard", nullForAbsent: true }]);
+    expect(file.content).toContain("noteTitle: v.noteTitle ?? null,");
+    expect(file.content).toContain("noteMood: v.noteMood ?? null,");
+  });
+
+  it("refuses a plain reverse mapper when a required source field is read from a nullable column", async () => {
+    await expect(generateRow([{ from: "Note", to: "NoteRow", reverse: true }])).rejects.toThrow(
+      "required Note.title cannot be read from nullable NoteRow.noteTitle",
+    );
+  });
+
+  it("emits a reverse mapper that returns null when a column a required field needs is NULL", async () => {
+    const [file] = await generateRow([{ from: "Note", to: "NoteRow", reverse: "orNull" }]);
+    expect(file.content).toContain("export function noteFromNoteRow(");
+    expect(file.content).toContain("): Note | null {");
+    expect(file.content).toContain("if (row.noteTitle == null || row.noteMood == null) return null;");
+    expect(file.content).toContain("title: row.noteTitle,");
+    expect(file.content).toContain("...(row.noteBody != null ? { body: row.noteBody } : {}),");
+  });
+});

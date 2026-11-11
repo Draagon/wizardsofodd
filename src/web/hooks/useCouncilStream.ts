@@ -5,16 +5,25 @@ import type { VerdictOutput } from "../../db/generated/VerdictOutput";
 import type { CouncilRequest } from "../../db/generated/CouncilRequest";
 import type { WizardFramePayload } from "../../db/generated/WizardFramePayload";
 import type { ErrorFramePayload } from "../../db/generated/ErrorFramePayload";
-import { toCouncilFrame, type CouncilFrame } from "../generated/council-frames";
+import { COUNCIL_EVENTS, toCouncilFrame, type CouncilFrame } from "../generated/council-frames";
 
 // SSE event payload shapes — sourced directly from the codegen'd types so the
 // hook, the SSR share-page renderer, and the DB queries all speak the same shape.
 export type Verdict = VerdictOutput;
 
-/** One council turn as the UI renders it: a `wizard` or `error` frame's payload, tagged by kind. */
-export type WizardTurn = ({ kind: "wizard" } & WizardFramePayload) | ({ kind: "error" } & ErrorFramePayload);
+/** One council turn as the UI renders it: a `wizard` or `error` frame's payload, tagged by its frame's event. */
+export type WizardTurn =
+  | ({ kind: typeof COUNCIL_EVENTS.wizard } & WizardFramePayload)
+  | ({ kind: typeof COUNCIL_EVENTS.error } & ErrorFramePayload);
 
-export type StreamStatus = "idle" | "streaming" | "complete" | "error";
+/** The stream's UI state. Not a model enum: it tracks the request, not the council. */
+export const STREAM_STATUS = {
+  idle: "idle",
+  streaming: "streaming",
+  complete: "complete",
+  error: "error",
+} as const;
+export type StreamStatus = (typeof STREAM_STATUS)[keyof typeof STREAM_STATUS];
 
 export interface StreamState {
   status: StreamStatus;
@@ -25,7 +34,7 @@ export interface StreamState {
 }
 
 export const initialState: StreamState = {
-  status: "idle",
+  status: STREAM_STATUS.idle,
   slug: null,
   wizardTurns: [],
   verdict: null,
@@ -40,34 +49,34 @@ export type StreamAction =
 export function reducer(state: StreamState, action: StreamAction): StreamState {
   if (action.type === "reset") return initialState;
   if (action.type === "streamError") {
-    return { ...state, status: "error", errorMessage: action.message };
+    return { ...state, status: STREAM_STATUS.error, errorMessage: action.message };
   }
   // action.type === "frame" — TS narrows action.frame to CouncilFrame, and
   // the switch on frame.event narrows action.frame.data per-arm.
   const frame = action.frame;
   switch (frame.event) {
-    case "council":
-      return { ...state, status: "streaming", slug: frame.data.id };
-    case "wizard": {
+    case COUNCIL_EVENTS.council:
+      return { ...state, status: STREAM_STATUS.streaming, slug: frame.data.id };
+    case COUNCIL_EVENTS.wizard: {
       if (state.slug === null) return state;
       return {
         ...state,
-        wizardTurns: [...state.wizardTurns, { kind: "wizard", ...frame.data }],
+        wizardTurns: [...state.wizardTurns, { kind: frame.event, ...frame.data }],
       };
     }
-    case "error": {
+    case COUNCIL_EVENTS.error: {
       if (state.slug === null) return state;
       return {
         ...state,
-        wizardTurns: [...state.wizardTurns, { kind: "error", ...frame.data }],
+        wizardTurns: [...state.wizardTurns, { kind: frame.event, ...frame.data }],
       };
     }
-    case "verdict": {
+    case COUNCIL_EVENTS.verdict: {
       if (state.slug === null) return state;
       return { ...state, verdict: frame.data.verdict };
     }
-    case "done":
-      return { ...state, status: "complete" };
+    case COUNCIL_EVENTS.done:
+      return { ...state, status: STREAM_STATUS.complete };
     default: {
       // Exhaustiveness check — if a new event is added to the codegen'd union
       // without a reducer case, TS flags this branch.

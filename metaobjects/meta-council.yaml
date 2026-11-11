@@ -17,46 +17,51 @@ metadata:
               required: true
           - field.string:
               name: question
-              required: true
+              extends: CouncilRequest.question   # the 600-char cap the endpoint enforces
           - field.enum:
               name: status
               extends: councilStatus
               required: true
+          # The verdict columns are the persisted form of VerdictOutput: each one
+          # extends the VerdictOutput field it stores, so its type, enum values and
+          # validators (confidence's 0-1 range, which becomes a CHECK) come from the
+          # owner. They are optional here because a council has no verdict until it
+          # completes. The generated lineage mappers (Council.lineage.ts) copy a
+          # verdict onto these columns and back.
           - field.enum:
               name: verdictStance
-              extends: guildVerdict
+              extends: VerdictOutput.stance
               required: false
           - field.float:
               name: verdictConfidence
+              extends: VerdictOutput.confidence
               required: false
           - field.string:
               name: verdictMarkdown
+              extends: VerdictOutput.takeMarkdown
               required: false
           - field.enum:
               name: verdictEvidenceQuality
-              extends: evidenceGrade
+              extends: VerdictOutput.evidenceQuality
               required: false
           - field.object:
               name: dissents
+              extends: VerdictOutput.dissents
               column: dissents_json
-              objectRef: Dissent
-              isArray: true
               storage: jsonb   # explicit on the persisted column (the default; stated for clarity)
               required: false
           - field.string:
               name: verdictAgreements
+              extends: VerdictOutput.agreements
               column: verdict_agreements_json
-              isArray: true
-              required: false
           - field.string:
               name: verdictSplits
+              extends: VerdictOutput.splits
               column: verdict_splits_json
-              isArray: true
-              required: false
           - field.string:
               name: verdictVerifyNote
+              extends: VerdictOutput.verifyNote
               column: verdict_verify_note
-              required: false
           # createdAt/completedAt are epoch-millis stored as field.long (INTEGER),
           # matching the live D1 schema. Deliberately NOT field.timestamp: the TS
           # sqlite timestamp codec is string-mode, which would change the column

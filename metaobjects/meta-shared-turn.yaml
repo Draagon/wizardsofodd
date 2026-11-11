@@ -1,0 +1,42 @@
+# SharedTurn — the PUBLIC view of one council turn, served in `turns` by
+# GET /c/:slug.json. Like SharedCouncil, its field set IS the exposure: each
+# field descends from the CouncilTurn column it publishes, and the
+# lineage-mappers generator emits the copy (src/db/generated/SharedTurn.lineage.ts).
+# A CouncilTurn column not declared here is never served: councilId and ordinal
+# (the array order carries the position) and the deprecated round column stay
+# private, and a new column stays hidden until someone adds it here on purpose.
+# A NULL column arrives as null, not as a missing key (nullForAbsent in
+# metaobjects.config.ts).
+metadata:
+  package: wizardsofodd
+  children:
+    - object.value:
+        name: SharedTurn
+        children:
+          - field.string:
+              name: wizardId
+              extends: CouncilTurn.wizardId
+          - field.string:
+              name: wizardName
+              extends: CouncilTurn.wizardName
+          - field.enum:
+              name: kind
+              extends: CouncilTurn.kind
+          - field.enum:
+              name: stance
+              extends: CouncilTurn.stance
+          - field.string:
+              name: takeMarkdown
+              extends: CouncilTurn.takeMarkdown
+          - field.string:
+              name: oneLineSummary
+              extends: CouncilTurn.oneLineSummary
+          - field.float:
+              name: confidence
+              extends: CouncilTurn.confidence
+          - field.string:
+              name: keyClaims
+              extends: CouncilTurn.keyClaims
+          - field.object:
+              name: citations
+              extends: CouncilTurn.citations

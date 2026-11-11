@@ -97,9 +97,11 @@ export default defineConfig({
     // OPT-IN on TypeScript: `generators: [...]` IS the complete suite here, exactly
     // like the JVM's <generators> — there is no default set to inherit from. `meta init`
     // scaffolds it, but this project predates that, so it has to be wired by hand.
-    // Nothing in this repo hand-writes SQL (the .sql files under migrations/ are
-    // `meta migrate` OUTPUT), so no consumer changes; it is wired for parity, and so
-    // that anything added later has the constant sitting there instead of a literal.
+    // Nothing in src/ writes raw SQL: the generated Drizzle tables read these names,
+    // and new migrations under migrations/ are `meta migrate --dialect d1` output
+    // (0001-0005 were hand-written before the project adopted it; see
+    // docs/runbook.md "Migrate"). It is wired so that anything added later has the
+    // constant sitting there instead of a literal.
     namesFile(),
     barrel(),
     promptRender({ target: "render" }),
@@ -116,8 +118,11 @@ export default defineConfig({
     lineageMappers([
       { from: "WizardOutput", to: "CouncilTurn", reverse: true }, // persist a take / rehydrate it
       { from: "WizardOutput", to: "TurnLens" }, // project a prior take into the prompt payload
+      // Store a verdict on its council / read it back (null until the council completes).
+      { from: "VerdictOutput", to: "Council", reverse: "orNull" },
       // The public /c/:slug.json view: no visitorId, and a NULL column is served as null.
       { from: "Council", to: "SharedCouncil", nullForAbsent: true },
+      { from: "CouncilTurn", to: "SharedTurn", nullForAbsent: true },
     ]),
     // The browsable docs site for the model (→ docs target, site/). `prompts` points at
     // the external Mustache sources under data/ (outside metaobjects/) so the site shows

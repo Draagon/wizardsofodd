@@ -7,9 +7,14 @@ Operational procedures for wizardsofodd.com. For *what* and *why*, see
 
 ```bash
 cd <repo-root>
-npx tsc --noEmit && npx vitest run            # gate: must be clean + green
-npx wrangler deploy                           # ~5s; prints Version ID
+npm run deploy                                # predeploy gates, then wrangler deploy
 ```
+
+`npm run deploy` is the only supported way to ship. Its `predeploy` step runs
+`npm run check` (the drift gate `npm run demo:drift`, the portrait check, local D1
+schema drift, `tsc`, the test suite), then `npm run verify:db:remote` (production D1
+schema drift) and `npm run build:web`, and stops at the first failure. Never call
+`wrangler deploy` directly: it skips every one of those gates.
 
 Production deploys are direct from `main`. Smoke-check:
 
@@ -93,11 +98,12 @@ Adding (or replacing) a wizard is a pure metadata change — no TypeScript edits
    (voice, technique guidance) and `<id>-user.mustache` (how the wizard reads the
    question, prior takes, sources).
 4. **Portrait** — drop `public/portraits/<id>.webp` (lowercase id).
-5. **Regenerate** — `npm run check` reruns codegen, validates, and runs tests;
-   the wizard-registry generator fails the build naming any missing declaration.
+5. **Regenerate** — `npm run gen:db` reruns codegen (the wizard-registry generator
+   fails naming any missing declaration), then `npm run check` runs the drift gate,
+   validates, and runs tests.
 
 To remove a wizard, delete its data/template/portrait files and its two prompt
-nodes, then `npm run check`. `test/wizards.test.ts` asserts the roster count —
+nodes, then `npm run gen:db && npm run check`. `test/wizards.test.ts` asserts the roster count —
 update the expected number to match.
 
 ## Rotate keys
@@ -160,23 +166,28 @@ show up here.
 
 ## Migrate
 
-D1 migrations are hand-written SQL files in `migrations/`, applied with:
+D1 migrations in `migrations/` are generated from the metadata by `meta migrate`.
+After changing an entity under `metaobjects/`, run `npm run gen:db`, then write the
+migration and apply it locally:
 
 ```bash
-npm run db:migrate:local                      # apply to local D1
+npx meta migrate --dialect d1 --d1 DB --out-dir migrations --slug <what-changed>
+npm run verify:db                             # applies it to local D1, then checks schema drift
 npm run db:migrate:remote                     # apply to production D1 (run at deploy time)
 ```
 
-Shipped so far: `0001_init.sql`, `0002_structured_outputs.sql` (Phase O structured
-columns), `0003_verdict_agree_split.sql` (W3 honest-verdict map columns). Migrations
-are forward-only (SQLite `ALTER TABLE ADD COLUMN`).
+`meta migrate` also writes a down file under `migrations/.down/`; move it to
+`migrations/rollbacks/<name>.down.sql` (wrangler applies every `.sql` in
+`migrations/`, so a down file must not sit there). Read the generated SQL before
+committing it: a change SQLite cannot `ALTER` (a new CHECK, a narrower column) is a
+table rebuild, and a CHECK fails on any existing row that violates it, so query
+production for violating rows first.
 
-> **Why hand-written, not `meta migrate`?** MetaObjects supports `dialect: "d1"` +
-> `meta migrate` to *generate* migrations from the metadata. This project keeps them
-> hand-written on purpose: the schema is small and every change so far is a trivial
-> additive `ADD COLUMN`, so hand-authoring is lower-ceremony and gives full control over
-> the exact SQL — with the codegen'd Drizzle schema + the drift gate still keeping the
-> runtime code honest to the columns. Flip `dialect` to `"d1"` if the schema grows.
+Shipped so far: `0001_init.sql` to `0005_drop_dead_followups.sql` (hand-written,
+from before the project adopted `meta migrate`), `0006_reconcile-schema.sql` (rebuild
+that brought the live schema in line with the metadata's CHECKs) and
+`0007_link-verdict-and-council-id.sql` (rebuild for the verdict confidence CHECK,
+`council_turns.council_id` at the slug width, and the 600-char question cap).
 
 **`db:migrate:remote` is NOT automatic** — after a deploy that adds a migration, run it
 against production D1 or the Worker will write to columns that don't exist yet (D1
@@ -237,11 +248,11 @@ The ultimate safety net — independent of any Worker code path.
 
 ## Pre-deploy checklist
 
-Before every `wrangler deploy`:
+Before every `npm run deploy`:
 
 ```bash
-# 1. Tests green
-npx tsc --noEmit && npx vitest run
+# 1. Gates green (predeploy runs this again, but run it before the checks below)
+npm run check
 
 # 2. Turnstile secret is set as a SECRET (overriding the bypass var)
 npx wrangler secret list | grep -q '^TURNSTILE_SECRET' \
@@ -251,8 +262,8 @@ npx wrangler secret list | grep -q '^TURNSTILE_SECRET' \
 grep -q '1x00000000000000000000AA' public/index.html \
   && (echo 'FATAL: public/index.html still has the test Turnstile sitekey'; exit 1)
 
-# 4. Deploy
-npx wrangler deploy
+# 4. Deploy (predeploy reruns the gates, then wrangler deploy)
+npm run deploy
 ```
 
 The grep guards are intentionally hard-fail. If you see "FATAL", fix

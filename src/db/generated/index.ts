@@ -9,6 +9,7 @@ export * from "./ErrorFramePayload";
 export * from "./RivalLens";
 export * from "./RosterLens";
 export * from "./SharedCouncil";
+export * from "./SharedTurn";
 export * from "./SourceLens";
 export * from "./TurnLens";
 export * from "./VerdictFramePayload";

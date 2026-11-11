@@ -118,7 +118,7 @@ the drift gate all pick it up. (10 personas ship; 5 run by default, the visitor 
 ```bash
 npm install
 echo 'ANTHROPIC_API_KEY = "sk-ant-..."' > .dev.vars   # local only; gitignored
-npm run check        # gen → verify (the drift gate) → typecheck → tests
+npm run check        # drift gate → verify → typecheck → tests (fails on drift; regen is npm run gen:db)
 npm run dev          # wrangler dev
 ```
 

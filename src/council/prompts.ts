@@ -75,6 +75,23 @@ export function buildWizardSystem(wizard: Wizard, all: readonly Wizard[]): strin
   return entryFor(wizard).renderSystem(payload, templateProvider).trimEnd();
 }
 
+/** The payload every wizard's user prompt renders from. The orchestrator and
+ *  buildWizardMessages both build it here, so the snapshot test covers the
+ *  payload production sends. */
+export function buildWizardUserPayload(
+  question: string,
+  prior: readonly PriorTurn[],
+  sources: readonly SearchResult[] = [],
+): WizardUserPayload {
+  return {
+    question,
+    prior: prior.map(toTurnLens),
+    hasPrior: prior.length > 0,
+    sources: sources.map(toSourceLens),
+    hasSources: sources.length > 0,
+  };
+}
+
 /** @internal — kept for byte-equivalence snapshot test (`test/prompts-snapshot.test.ts`). */
 export function buildWizardMessages(
   question: string,
@@ -84,13 +101,7 @@ export function buildWizardMessages(
   // All wizard user templates are byte-identical (the per-wizard
   // variation is system-side); any renderer produces the same output.
   // Pick the first registry entry by convention.
-  const payload: WizardUserPayload = {
-    question,
-    prior: prior.map(toTurnLens),
-    hasPrior: prior.length > 0,
-    sources: sources.map(toSourceLens),
-    hasSources: sources.length > 0,
-  };
+  const payload = buildWizardUserPayload(question, prior, sources);
   const content = WIZARD_REGISTRY[0].renderUser(payload, templateProvider).trimEnd();
   return [{ role: "user", content }];
 }

@@ -12,7 +12,7 @@ metadata:
         children:
           - field.string:
               name: name
-              required: true
+              extends: Wizard.name
           - field.boolean:
               name: last
               required: true

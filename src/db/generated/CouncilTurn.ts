@@ -88,7 +88,15 @@ export type CouncilTurnKind = "wizard" | "error";
 export const CouncilTurnKindEnum = z.enum(["wizard", "error"]);
 export { type WizardStance, WizardStanceEnum } from "./enums";
 export const CouncilTurnInsertSchema = z.object({
-  councilId: z.string().min(1).max(16),
+  councilId: z
+    .string()
+    .min(1)
+    .max(8)
+    .regex(
+      new RegExp(
+        "^(?:^[abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$)$",
+      ),
+    ),
   ordinal: z.number().int(),
   round: z.number().int().optional(),
   wizardId: z.string().min(1).max(32),
@@ -103,7 +111,16 @@ export const CouncilTurnInsertSchema = z.object({
 });
 
 export const CouncilTurnUpdateSchema = z.object({
-  councilId: z.string().min(1).max(16).optional(),
+  councilId: z
+    .string()
+    .min(1)
+    .max(8)
+    .regex(
+      new RegExp(
+        "^(?:^[abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$)$",
+      ),
+    )
+    .optional(),
   ordinal: z.number().int().optional(),
   round: z.number().int().optional(),
   wizardId: z.string().min(1).max(32).optional(),
@@ -158,7 +175,12 @@ export const CouncilTurn = {
     htmlType: "text",
     rules: {
       required: "Council Id is required",
-      maxLength: { value: 16, message: "Must be 16 characters or fewer" },
+      pattern: {
+        value:
+          /^[abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/,
+        message: "Invalid format",
+      },
+      maxLength: { value: 8, message: "Must be 8 characters or fewer" },
     },
   },
   ordinal: {

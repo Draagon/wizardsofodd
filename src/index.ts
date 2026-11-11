@@ -15,7 +15,7 @@ import {
   setCouncilError,
 } from "./db/queries";
 import { registerShareRoutes } from "./handlers/share";
-import { encodeCouncilFrame, type CouncilFrame } from "./web/generated/council-frames";
+import { COUNCIL_EVENTS, encodeCouncilFrame, type CouncilFrame } from "./web/generated/council-frames";
 import { CouncilRequestInsertSchema, type CouncilRequest } from "./db/generated/CouncilRequest";
 
 export interface Env {
@@ -169,7 +169,7 @@ app.post("/api/council", async (c) => {
     async start(controller) {
       // Every frame on the wire is a generated CouncilFrame (metaobjects/sse-frames/).
       const send = (frame: CouncilFrame) => controller.enqueue(encoder.encode(encodeCouncilFrame(frame)));
-      send({ event: "council", data: { id: slug } });
+      send({ event: COUNCIL_EVENTS.council, data: { id: slug } });
       try {
         const searchClient = (q: string) => search({
           query: q,
@@ -181,9 +181,9 @@ app.post("/api/council", async (c) => {
         const registry = selectRegistry(WIZARD_REGISTRY, wizardIds);
         for await (const frame of convene({ question, apiKey, model, search: searchClient, registry })) {
           // Persist first, then forward the same frame to the client.
-          if (frame.event === "wizard") {
+          if (frame.event === COUNCIL_EVENTS.wizard) {
             await recordWizardTurn(db, slug, { ordinal: ++ordinal, ...frame.data });
-          } else if (frame.event === "error") {
+          } else if (frame.event === COUNCIL_EVENTS.error) {
             await recordErrorTurn(db, slug, { ordinal: ++ordinal, ...frame.data });
           } else {
             await finalizeCouncil(db, slug, frame.data.verdict);
@@ -198,11 +198,11 @@ app.post("/api/council", async (c) => {
         // consistent with per-wizard errors and the React reducer doesn't need a
         // separate code path.
         send({
-          event: "error",
+          event: COUNCIL_EVENTS.error,
           data: { wizardId: "_stream", wizardName: "The Guild", reason: "The tower went dark unexpectedly." },
         });
       } finally {
-        send({ event: "done", data: { ok: true } });
+        send({ event: COUNCIL_EVENTS.done, data: { ok: true } });
         controller.close();
       }
     },

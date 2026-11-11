@@ -3,13 +3,13 @@
 //
 // Source of truth: field-level lineage in the metadata. A target field descends
 // from a source field when it
-//   - `extends: <Source>.<field>` (e.g. CouncilTurn.takeMarkdown extends
-//     WizardOutput.takeMarkdown), or
-//   - has the source field's name and extends the same abstract root field
-//     (e.g. CouncilTurn.stance and WizardOutput.stance both extend wizardStance).
-// The second form exists because an enum that extends a concrete field
-// (`extends: WizardOutput.stance`) loses the shared generated enum module — it
-// inlines its own copy — so enums keep extending the abstract directly.
+//   - `extends: <Source>.<field>`, directly or further up its chain (e.g.
+//     CouncilTurn.takeMarkdown extends WizardOutput.takeMarkdown, and
+//     Council.verdictMarkdown extends VerdictOutput.takeMarkdown, so the names
+//     need not match), or
+//   - has the source field's name and both `extends` chains end at the same
+//     abstract root field (e.g. SharedCouncil.verdictStance extends guildVerdict,
+//     and Council.verdictStance extends VerdictOutput.stance, which extends it).
 //
 // Without these mappers the field list of WizardOutput was re-spelled by hand in
 // every place that persisted or projected it; a field added to the value object
@@ -25,21 +25,29 @@
 //   forward  source → target fields   optional source → `?? null` (onto a nullable column, or
 //                                     onto an optional value field under `nullForAbsent`)
 //   reverse  target row → source      optional source from a nullable column → omitted when NULL
-// Anything else (a required source field read from a nullable column, an optional
+//   reverse "orNull"                  as reverse, but a required source field may be read
+//                                     from a nullable column: the mapper returns null when
+//                                     any such column is NULL (a row that holds no source yet)
+// Anything else (a required source field read from a nullable column by a plain reverse, an optional
 // source written to a NOT NULL column or to a value field without `nullForAbsent`, a
 // reverse mapper that misses a required source field) fails generation with the reason.
 
 import type { Generator, EmittedFile, GenContext } from "@metaobjectsdev/codegen-ts";
 import { formatTs, oncePerRun } from "@metaobjectsdev/codegen-ts";
-import { isMetaObject, isMetaRoot, type MetaField, type MetaObject } from "@metaobjectsdev/metadata";
+import { isMetaField, isMetaObject, isMetaRoot, type MetaField, type MetaObject } from "@metaobjectsdev/metadata";
 
 export interface LineageMapperSpec {
   /** The object the target's fields descend from (e.g. "WizardOutput", "Council"). */
   from: string;
   /** The object whose fields descend from it (e.g. "CouncilTurn"). */
   to: string;
-  /** Also emit the reverse mapper, target row → source value. Entity targets only. */
-  reverse?: boolean;
+  /**
+   * Also emit the reverse mapper, target row → source value. Entity targets only.
+   * `"orNull"` is for a row whose columns hold the source only some of the time (they
+   * are nullable): the mapper returns `null` when a column a required source field
+   * needs is NULL.
+   */
+  reverse?: boolean | "orNull";
   /**
    * Value-object targets only, and required when an optional source field maps onto
    * one: emit `null` for an absent/NULL field, so the mapped object always carries
@@ -59,21 +67,35 @@ function findObject(ctx: GenContext, name: string): MetaObject {
   return obj;
 }
 
+/** A field's `extends` chain, nearest ancestor first. */
+function ancestorsOf(f: MetaField): MetaField[] {
+  const chain: MetaField[] = [];
+  for (let sup = f.superData; sup && isMetaField(sup); sup = sup.superData) chain.push(sup);
+  return chain;
+}
+
+/** The package-level abstract a field's `extends` chain ends at, if it ends at one. */
+function abstractRootOf(f: MetaField): MetaField | undefined {
+  const root = ancestorsOf(f).at(-1);
+  return root?.isAbstract && root.parent && isMetaRoot(root.parent) ? root : undefined;
+}
+
 /** The target fields that descend from a source field, in the SOURCE's field order. */
 function lineageOf(target: MetaObject, source: MetaObject): LineagePair[] {
   const bySource = new Map<string, MetaField>();
   for (const tf of target.fields()) {
-    const sup = tf.superData;
-    if (!sup) continue;
-    // Direct: `extends: Source.field`.
-    if (sup.parent && isMetaObject(sup.parent) && sup.parent.name === source.name) {
-      bySource.set(sup.name, tf);
+    // Direct: `extends: Source.field`, at any depth of the chain (Council.verdictMarkdown
+    // extends VerdictOutput.takeMarkdown, so a field extending it descends from both).
+    const owner = ancestorsOf(tf).find((sup) => sup.parent && isMetaObject(sup.parent) && sup.parent.name === source.name);
+    if (owner) {
+      bySource.set(owner.name, tf);
       continue;
     }
-    // Shared abstract root: same name, same abstract super.
-    if (sup.isAbstract && sup.parent && isMetaRoot(sup.parent)) {
+    // Shared abstract root: same name, and both chains end at the same abstract.
+    const root = abstractRootOf(tf);
+    if (root) {
       const sf = source.findField(tf.name);
-      if (sf?.superData === sup) bySource.set(sf.name, tf);
+      if (sf && abstractRootOf(sf) === root) bySource.set(sf.name, tf);
     }
   }
   return source
@@ -137,10 +159,13 @@ function renderReverse(spec: LineageMapperSpec, source: MetaObject, target: Meta
       throw new Error(`lineage-mappers: ${target.name} has no field descending from required ${spec.from}.${sf.name}`);
     }
   }
+  const orNull = spec.reverse === "orNull";
   const rowType = `Pick<${target.name}, ${pairs.map((p) => JSON.stringify(p.target.name)).join(" | ")}>`;
+  // Columns a required source field is read from that may be NULL (orNull only).
+  const nullGuards = orNull ? pairs.filter((p) => p.source.isRequired && !p.target.isRequired) : [];
   const lines = pairs.map(({ source: sf, target: tf }) => {
     if (sf.isRequired) {
-      if (!tf.isRequired) {
+      if (!tf.isRequired && !orNull) {
         throw new Error(
           `lineage-mappers: required ${spec.from}.${sf.name} cannot be read from nullable ${target.name}.${tf.name}`,
         );
@@ -149,8 +174,15 @@ function renderReverse(spec: LineageMapperSpec, source: MetaObject, target: Meta
     }
     return `    ...(row.${tf.name} != null ? { ${sf.name}: row.${tf.name} } : {}),`;
   });
-  return `/** A ${target.name} row → the ${spec.from} its fields descend from (NULL optional columns are omitted). */
-export function ${lcFirst(spec.from)}From${target.name}(row: ${rowType}): ${spec.from} {
+  if (orNull && nullGuards.length === 0) {
+    throw new Error(`lineage-mappers: reverse "orNull" on ${target.name} has no nullable column for a required ${spec.from} field; use reverse: true`);
+  }
+  const guard = nullGuards.map((p) => `row.${p.target.name} == null`).join(" || ");
+  const doc = orNull
+    ? `/** A ${target.name} row → the ${spec.from} its fields descend from, or null when the row holds none (NULL optional columns are omitted). */`
+    : `/** A ${target.name} row → the ${spec.from} its fields descend from (NULL optional columns are omitted). */`;
+  return `${doc}
+export function ${lcFirst(spec.from)}From${target.name}(row: ${rowType}): ${spec.from}${orNull ? " | null" : ""} {${orNull ? `\n  if (${guard}) return null;` : ""}
   return {
 ${lines.join("\n")}
   };

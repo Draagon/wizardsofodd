@@ -1,8 +1,10 @@
 import { WizardCard } from "../web/components/WizardCard";
 import { VerdictCard } from "../web/components/VerdictCard";
 import { WIZARDS } from "../personas/generated/wizards";
-import { councilVerdict } from "../db/queries";
+import { verdictOutputFromCouncil } from "../db/generated/Council.lineage";
 import { wizardOutputFromCouncilTurn } from "../db/generated/CouncilTurn.lineage";
+import { CouncilTurnKindEnum } from "../db/generated/CouncilTurn";
+import { COUNCIL_EVENTS } from "../web/generated/council-frames";
 import type { CouncilWithTurns } from "../db/generated/Council.queries";
 import type { WizardTurn, Verdict } from "../web/hooks/useCouncilStream";
 import { CouncilStatusEnum } from "../db/generated/Council";
@@ -16,13 +18,13 @@ export function SharePage({ data }: Props) {
   const nameOf = (id: string) => WIZARDS.find((w) => w.id === id)?.name ?? id;
 
   const toRecord = (t: CouncilWithTurns["turns"][number]): WizardTurn =>
-    t.kind === "error"
-      ? { kind: "error", wizardId: t.wizardId, wizardName: t.wizardName, reason: t.takeMarkdown }
-      : { kind: "wizard", wizardId: t.wizardId, wizardName: t.wizardName, take: wizardOutputFromCouncilTurn(t) };
+    t.kind === CouncilTurnKindEnum.enum.error
+      ? { kind: COUNCIL_EVENTS.error, wizardId: t.wizardId, wizardName: t.wizardName, reason: t.takeMarkdown }
+      : { kind: COUNCIL_EVENTS.wizard, wizardId: t.wizardId, wizardName: t.wizardName, take: wizardOutputFromCouncilTurn(t) };
 
   const records = turns.map(toRecord);
   const verdict: Verdict | null =
-    council.status === CouncilStatusEnum.enum.complete ? councilVerdict(council) : null;
+    council.status === CouncilStatusEnum.enum.complete ? verdictOutputFromCouncil(council) : null;
 
   return (
     <main className="homepage share-page">

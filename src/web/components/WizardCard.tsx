@@ -1,4 +1,5 @@
 import type { WizardTurn } from "../hooks/useCouncilStream";
+import { COUNCIL_EVENTS } from "../generated/council-frames";
 import { Markdown } from "./Markdown";
 import { portraitSrc, onPortraitError } from "./portrait";
 
@@ -12,7 +13,7 @@ interface Props {
 // the broken portrait is hidden via onError; the wizardName carries through.
 export function WizardCard({ turn }: Props) {
   const portrait = portraitSrc(turn.wizardId);
-  if (turn.kind === "error") {
+  if (turn.kind === COUNCIL_EVENTS.error) {
     return (
       <article className="card card-error" aria-label={`${turn.wizardName} error`}>
         <img className="portrait" src={portrait} alt="" onError={onPortraitError} />

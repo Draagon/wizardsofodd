@@ -35,8 +35,8 @@ metadata:
               extends: Note.title
 `;
 
-async function generate(specs: LineageMapperSpec[]) {
-  const { root, errors } = await MetaDataLoader.fromString(MODEL, "yaml");
+async function generateFrom(model: string, specs: LineageMapperSpec[]) {
+  const { root, errors } = await MetaDataLoader.fromString(model, "yaml");
   expect(errors).toEqual([]);
   const ctx: GenContext = {
     entities: root.children().filter(isMetaObject),
@@ -46,6 +46,10 @@ async function generate(specs: LineageMapperSpec[]) {
     warn: () => {},
   };
   return lineageMappers(specs).generate(ctx);
+}
+
+function generate(specs: LineageMapperSpec[]) {
+  return generateFrom(MODEL, specs);
 }
 
 describe("lineageMappers generator", () => {
@@ -121,17 +125,8 @@ metadata:
               extends: mood
 `;
 
-async function generateRow(specs: LineageMapperSpec[]) {
-  const { root, errors } = await MetaDataLoader.fromString(ROW_MODEL, "yaml");
-  expect(errors).toEqual([]);
-  const ctx: GenContext = {
-    entities: root.children().filter(isMetaObject),
-    loadedRoot: root,
-    matches: () => true,
-    config: { outDir: "generated", extStyle: "none", dbImport: "./db", dialect: "sqlite" },
-    warn: () => {},
-  };
-  return lineageMappers(specs).generate(ctx);
+function generateRow(specs: LineageMapperSpec[]) {
+  return generateFrom(ROW_MODEL, specs);
 }
 
 describe("lineageMappers generator: extends chains and nullable rows", () => {
@@ -166,8 +161,7 @@ describe("lineageMappers generator: extends chains and nullable rows", () => {
 
 describe("lineageMappers generator: one source field, two descendants", () => {
   it("refuses a target with two fields descending from the same source field", async () => {
-    const { root, errors } = await MetaDataLoader.fromString(
-      `
+    const twoTitlesModel = `
 metadata:
   package: demo
   children:
@@ -186,18 +180,8 @@ metadata:
           - field.string:
               name: heading
               extends: Note.title
-`,
-      "yaml",
-    );
-    expect(errors).toEqual([]);
-    const ctx: GenContext = {
-      entities: root.children().filter(isMetaObject),
-      loadedRoot: root,
-      matches: () => true,
-      config: { outDir: "generated", extStyle: "none", dbImport: "./db", dialect: "sqlite" },
-      warn: () => {},
-    };
-    await expect(lineageMappers([{ from: "Note", to: "TwoTitles" }]).generate(ctx)).rejects.toThrow(
+`;
+    await expect(generateFrom(twoTitlesModel, [{ from: "Note", to: "TwoTitles" }])).rejects.toThrow(
       "TwoTitles.title and TwoTitles.heading both descend from Note.title",
     );
   });

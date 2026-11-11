@@ -3,6 +3,7 @@ import type { SearchResult } from "../llm/web-search";
 import { WIZARD_REGISTRY } from "../personas/generated/registry";
 import { templateProvider } from "../render/generated/templates";
 import { EvidenceGradeEnum, GuildVerdictEnum } from "../db/generated/enums";
+import type { VerdictOutput } from "../db/generated/VerdictOutput";
 import {
   buildWizardSystem,
   buildWizardUserPayload,
@@ -109,17 +110,9 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
   if (prior.length === 0) {
     yield {
       event: COUNCIL_EVENTS.verdict,
-      data: { verdict: {
-        stance: GuildVerdictEnum.enum.unanswerable,
-        confidence: 0,
-        takeMarkdown:
-          "No wizard was able to answer this time, so the Guild has no verdict to offer. Please try again in a moment.",
-        dissents: [],
-        evidenceQuality: EvidenceGradeEnum.enum.none,
-        agreements: [],
-        splits: [],
-        verifyNote: "",
-      } },
+      data: { verdict: unanswerableVerdict(
+        "No wizard was able to answer this time, so the Guild has no verdict to offer. Please try again in a moment.",
+      ) },
     };
     return;
   }
@@ -137,19 +130,25 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
     // deliberation outcome, since the wizards' takes above are still valid.
     yield {
       event: COUNCIL_EVENTS.verdict,
-      data: { verdict: {
-        stance: GuildVerdictEnum.enum.unanswerable,
-        confidence: 0,
-        takeMarkdown:
-          "The wizards' takes are above, but the Guild hit a temporary problem before it could synthesize a verdict. Please try again in a moment.",
-        dissents: [],
-        evidenceQuality: EvidenceGradeEnum.enum.none,
-        agreements: [],
-        splits: [],
-        verifyNote: "",
-      } },
+      data: { verdict: unanswerableVerdict(
+        "The wizards' takes are above, but the Guild hit a temporary problem before it could synthesize a verdict. Please try again in a moment.",
+      ) },
     };
   }
+}
+
+/** Synthetic "no verdict" result for a council that could not reach one. */
+function unanswerableVerdict(takeMarkdown: string): VerdictOutput {
+  return {
+    stance: GuildVerdictEnum.enum.unanswerable,
+    confidence: 0,
+    takeMarkdown,
+    dissents: [],
+    evidenceQuality: EvidenceGradeEnum.enum.none,
+    agreements: [],
+    splits: [],
+    verifyNote: "",
+  };
 }
 
 // Follow-up rounds (clarify) were removed with the follow-up feature; convene

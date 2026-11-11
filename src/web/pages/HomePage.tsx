@@ -13,7 +13,7 @@ interface Props {
 export function HomePage({ turnstileSiteKey }: Props) {
   const { state, start } = useCouncilStream();
   const { enabledIds, toggle, count } = useWizardSelection();
-  const isBusy = state.status === "streaming";
+  const isBusy = state.status === STREAM_STATUS.streaming;
   const isComplete = state.status === STREAM_STATUS.complete && state.slug !== null;
 
   return (

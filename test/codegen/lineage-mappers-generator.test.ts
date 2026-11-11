@@ -163,3 +163,42 @@ describe("lineageMappers generator: extends chains and nullable rows", () => {
     expect(file.content).toContain("...(row.noteBody != null ? { body: row.noteBody } : {}),");
   });
 });
+
+describe("lineageMappers generator: one source field, two descendants", () => {
+  it("refuses a target with two fields descending from the same source field", async () => {
+    const { root, errors } = await MetaDataLoader.fromString(
+      `
+metadata:
+  package: demo
+  children:
+    - object.value:
+        name: Note
+        children:
+          - field.string:
+              name: title
+              required: true
+    - object.value:
+        name: TwoTitles
+        children:
+          - field.string:
+              name: title
+              extends: Note.title
+          - field.string:
+              name: heading
+              extends: Note.title
+`,
+      "yaml",
+    );
+    expect(errors).toEqual([]);
+    const ctx: GenContext = {
+      entities: root.children().filter(isMetaObject),
+      loadedRoot: root,
+      matches: () => true,
+      config: { outDir: "generated", extStyle: "none", dbImport: "./db", dialect: "sqlite" },
+      warn: () => {},
+    };
+    await expect(lineageMappers([{ from: "Note", to: "TwoTitles" }]).generate(ctx)).rejects.toThrow(
+      "TwoTitles.title and TwoTitles.heading both descend from Note.title",
+    );
+  });
+});

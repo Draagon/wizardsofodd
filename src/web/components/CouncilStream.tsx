@@ -8,7 +8,7 @@ interface Props {
 }
 
 export function CouncilStream({ state }: Props) {
-  if (state.status === "idle") return null;
+  if (state.status === STREAM_STATUS.idle) return null;
   const nameOf = (id: string) => WIZARDS.find((w) => w.id === id)?.name ?? id;
   return (
     <section className="council" aria-label="The Guild speaks">

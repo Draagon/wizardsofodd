@@ -83,19 +83,30 @@ function abstractRootOf(f: MetaField): MetaField | undefined {
 /** The target fields that descend from a source field, in the SOURCE's field order. */
 function lineageOf(target: MetaObject, source: MetaObject): LineagePair[] {
   const bySource = new Map<string, MetaField>();
+  // Two target fields descending from one source field would leave one of them
+  // unmapped; refuse rather than pick one.
+  const pair = (sourceField: string, tf: MetaField) => {
+    const taken = bySource.get(sourceField);
+    if (taken) {
+      throw new Error(
+        `lineage-mappers: ${target.name}.${taken.name} and ${target.name}.${tf.name} both descend from ${source.name}.${sourceField}`,
+      );
+    }
+    bySource.set(sourceField, tf);
+  };
   for (const tf of target.fields()) {
     // Direct: `extends: Source.field`, at any depth of the chain (Council.verdictMarkdown
     // extends VerdictOutput.takeMarkdown, so a field extending it descends from both).
     const owner = ancestorsOf(tf).find((sup) => sup.parent && isMetaObject(sup.parent) && sup.parent.name === source.name);
     if (owner) {
-      bySource.set(owner.name, tf);
+      pair(owner.name, tf);
       continue;
     }
     // Shared abstract root: same name, and both chains end at the same abstract.
     const root = abstractRootOf(tf);
     if (root) {
       const sf = source.findField(tf.name);
-      if (sf && abstractRootOf(sf) === root) bySource.set(sf.name, tf);
+      if (sf && abstractRootOf(sf) === root) pair(sf.name, tf);
     }
   }
   return source

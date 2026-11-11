@@ -166,14 +166,14 @@ show up here.
 
 ## Migrate
 
-D1 migrations in `migrations/` are generated from the metadata by `meta migrate`.
+New D1 migrations in `migrations/` are generated from the metadata by `meta migrate --dialect d1`.
 After changing an entity under `metaobjects/`, run `npm run gen:db`, then write the
 migration and apply it locally:
 
 ```bash
 npx meta migrate --dialect d1 --d1 DB --out-dir migrations --slug <what-changed>
 npm run verify:db                             # applies it to local D1, then checks schema drift
-npm run db:migrate:remote                     # apply to production D1 (run at deploy time)
+npm run db:migrate:remote                     # apply to production D1 (before npm run deploy)
 ```
 
 `meta migrate` also writes a down file under `migrations/.down/`; move it to
@@ -189,10 +189,11 @@ that brought the live schema in line with the metadata's CHECKs) and
 `0007_link-verdict-and-council-id.sql` (rebuild for the verdict confidence CHECK,
 `council_turns.council_id` at the slug width, and the 600-char question cap).
 
-**`db:migrate:remote` is NOT automatic** — after a deploy that adds a migration, run it
-against production D1 or the Worker will write to columns that don't exist yet (D1
-rejects the unknown columns and the new data is silently dropped). New columns are
-nullable, so applying the migration before *or* after the deploy is safe.
+**`db:migrate:remote` is NOT automatic** — for a change that adds a migration, run it
+against production D1 *before* `npm run deploy`. The `predeploy` step runs
+`npm run verify:db:remote`, which fails on the schema drift until the migration is
+applied, so the deploy stops there instead of shipping a Worker that writes to a
+schema production does not have yet.
 
 > **Test schema:** the Workers-pool test D1 replays `migrations/*.sql` directly
 > (`test/setup.ts` loads them via a Vite `?raw` glob, inlined at build time since

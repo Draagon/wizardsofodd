@@ -9,7 +9,7 @@ export interface VerdictUserPayload {
   prior?: TurnLens[] | undefined;
 }
 export const VerdictUserPayloadInsertSchema = z.object({
-  question: z.string().min(1),
+  question: z.string().min(1).max(600),
   prior: z.array(TurnLensInsertSchema).optional(),
 });
 /**
@@ -23,7 +23,10 @@ export const VerdictUserPayload = {
     label: "Question",
     view: "text",
     htmlType: "text",
-    rules: { required: "Question is required" },
+    rules: {
+      required: "Question is required",
+      maxLength: { value: 600, message: "Must be 600 characters or fewer" },
+    },
   },
   prior: { name: "prior", label: "Prior", view: "text", htmlType: "text" },
 } as const;

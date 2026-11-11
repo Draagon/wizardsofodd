@@ -13,7 +13,7 @@ export interface WizardUserPayload {
   hasSources: boolean;
 }
 export const WizardUserPayloadInsertSchema = z.object({
-  question: z.string().min(1),
+  question: z.string().min(1).max(600),
   prior: z.array(TurnLensInsertSchema).optional(),
   hasPrior: z.boolean(),
   sources: z.array(SourceLensInsertSchema).optional(),
@@ -30,7 +30,10 @@ export const WizardUserPayload = {
     label: "Question",
     view: "text",
     htmlType: "text",
-    rules: { required: "Question is required" },
+    rules: {
+      required: "Question is required",
+      maxLength: { value: 600, message: "Must be 600 characters or fewer" },
+    },
   },
   prior: { name: "prior", label: "Prior", view: "text", htmlType: "text" },
   hasPrior: {

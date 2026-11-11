@@ -2,7 +2,7 @@ import { MeetTheGuild } from "../components/MeetTheGuild";
 import { AskForm } from "../components/AskForm";
 import { CouncilStream } from "../components/CouncilStream";
 import { ShareAffordance } from "../components/ShareAffordance";
-import { useCouncilStream } from "../hooks/useCouncilStream";
+import { STREAM_STATUS, useCouncilStream } from "../hooks/useCouncilStream";
 import { useWizardSelection } from "../hooks/useWizardSelection";
 
 interface Props {
@@ -13,8 +13,8 @@ interface Props {
 export function HomePage({ turnstileSiteKey }: Props) {
   const { state, start } = useCouncilStream();
   const { enabledIds, toggle, count } = useWizardSelection();
-  const isBusy = state.status === "streaming";
-  const isComplete = state.status === "complete" && state.slug !== null;
+  const isBusy = state.status === STREAM_STATUS.streaming;
+  const isComplete = state.status === STREAM_STATUS.complete && state.slug !== null;
 
   return (
     <main className="homepage">

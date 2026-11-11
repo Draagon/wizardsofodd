@@ -1,0 +1,4 @@
+-- WARNING: this down does NOT reverse the D1 foreign-key cascade rebuild of
+-- "councils", "council_turns". Reverse by hand from the pre-migration schema:
+--   add-check on "councils"
+-- Rows are not lost by the rebuild itself; values in any column it dropped are.

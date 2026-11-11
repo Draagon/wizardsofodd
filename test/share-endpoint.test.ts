@@ -110,6 +110,19 @@ describe("GET /c/:slug.json — share data", () => {
     });
   });
 
+  it("serves only the public SharedTurn fields — never councilId, ordinal or round", async () => {
+    await seedComplete("cJsonDDD");
+    const res = await SELF.fetch("https://wizardsofodd.com/c/cJsonDDD.json");
+    const body = (await res.json()) as { turns: unknown[] };
+    expect(body.turns).toStrictEqual([
+      {
+        wizardId: "grumbel", wizardName: "G", kind: "wizard",
+        stance: "supports", takeMarkdown: "ship.", oneLineSummary: "ship",
+        confidence: 0.7, keyClaims: [], citations: null,
+      },
+    ]);
+  });
+
   it("serves a pending council's unset verdict fields as null, not as missing keys", async () => {
     const db = getDb(env);
     await db.insert(schema.councils).values({

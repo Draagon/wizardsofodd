@@ -13,7 +13,7 @@
     "gen:db": "meta gen",
     "verify:portraits": "tsx scripts/verify-portraits.ts",
     "verify": "npm run verify:portraits",
-    "check": "npm run gen:db && npm run verify && npm run verify:db && tsc -b && vitest run",
+    "check": "npm run demo:drift && npm run verify && npm run verify:db && tsc -b && vitest run",
     "build:web": "vite build",
     "predeploy": "npm run check && npm run verify:db:remote && npm run build:web",
     "db:migrate:local": "wrangler d1 migrations apply wizardsofodd --local",

@@ -116,6 +116,55 @@ describe("queries", () => {
     expect(row.completedAt).toBeGreaterThan(0);
   });
 
+  // The lifecycle is pending -> partial -> complete | error. complete and error are
+  // final: no later write may move a council out of either.
+  describe("status guards", () => {
+    const statusOf = async (db: ReturnType<typeof getDb>, id: string) =>
+      (await db.select().from(schema.councils).where(eq(schema.councils.id, id)))[0];
+
+    it("a late turn after complete leaves the council complete", async () => {
+      const db = getDb(env);
+      const id = await insertCouncil(db, { visitorId: "v-test", question: "q?" });
+      await finalizeCouncil(db, id, FAKE_VERDICT);
+      await recordWizardTurn(db, id, {
+        ordinal: 1, wizardId: "grumbel", wizardName: "Grumbel the Overcaffeinated",
+        take: FAKE_WIZARD_OUTPUT,
+      });
+      await recordErrorTurn(db, id, {
+        ordinal: 2, wizardId: "vexil", wizardName: "Madame Vexil the Riddling",
+        reason: "lost in thought",
+      });
+      expect((await statusOf(db, id)).status).toBe("complete");
+    });
+
+    it("setCouncilError after finalize leaves the council complete with its verdict", async () => {
+      const db = getDb(env);
+      const id = await insertCouncil(db, { visitorId: "v-test", question: "q?" });
+      await finalizeCouncil(db, id, FAKE_VERDICT);
+      const finished = await statusOf(db, id);
+      await setCouncilError(db, id);
+      const row = await statusOf(db, id);
+      expect(row.status).toBe("complete");
+      expect(row.verdictStance).toBe("yes");
+      expect(row.completedAt).toBe(finished.completedAt);
+    });
+
+    it("an errored council stays error", async () => {
+      const db = getDb(env);
+      const id = await insertCouncil(db, { visitorId: "v-test", question: "q?" });
+      await setCouncilError(db, id);
+      await recordWizardTurn(db, id, {
+        ordinal: 1, wizardId: "grumbel", wizardName: "Grumbel the Overcaffeinated",
+        take: FAKE_WIZARD_OUTPUT,
+      });
+      await finalizeCouncil(db, id, FAKE_VERDICT);
+      await setCouncilError(db, id);
+      const row = await statusOf(db, id);
+      expect(row.status).toBe("error");
+      expect(row.verdictStance).toBeNull();
+    });
+  });
+
   it("findCouncilWithTurns returns ordered turns + the council", async () => {
     const db = getDb(env);
     const id = await insertCouncil(db, { visitorId: "v-test", question: "ordered?" });

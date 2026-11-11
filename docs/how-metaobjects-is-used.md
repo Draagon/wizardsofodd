@@ -47,7 +47,11 @@ once, reused by `WizardOutput`, `TurnLens`, and `CouncilTurn`. From that one spi
   `SharedCouncil` view that `GET /c/:slug.json` serves: its declared fields *are* the
   exposure, so `visitorId` stays private and a new `Council` column stays hidden until
   someone adds it to `SharedCouncil` on purpose. That spec sets `nullForAbsent`, so every
-  declared key is always served and a NULL column arrives as `null`.
+  declared key is always served and a NULL column arrives as `null`. The turns in that
+  response go through `SharedTurn` the same way, so `councilId`, `ordinal` and the deprecated
+  `round` column stay private. `Council.lineage.ts` stores a `VerdictOutput` on the council's
+  verdict columns (each `extends` the `VerdictOutput` field it holds) and reads it back, as
+  `null` until the council completes.
 
 Rename a field on `WizardOutput`, or on the `WizardUserPayload` that the prompts bind, and the
 drift gate fails across all of it at once — the money shot in the [README](../README.md).
@@ -119,9 +123,11 @@ Reference projects that admit friction are believed. Real things this project hi
   inlined enum instead of the shared `enums.ts` one. So enum fields keep extending the abstract
   (`wizardStance`), and `lineageMappers` also pairs same-named fields that share an abstract.
 - **Lineage carries validators, and validators carry DB constraints.** Linking `Council`'s
-  verdict columns to `VerdictOutput` with `extends` would pull in `confidence`'s 0–1 validator,
-  which `meta verify --db` reads as a new CHECK constraint on `councils.verdict_confidence` that
-  the live table lacks. So those columns are still mapped by hand in `src/db/queries.ts`.
+  verdict columns to `VerdictOutput` with `extends` pulls in `confidence`'s 0–1 validator,
+  which `meta verify --db` reads as a new CHECK constraint on `councils.verdict_confidence`.
+  That kept the columns hand-mapped until migration 0007 (written by `meta migrate --dialect
+  d1`) rebuilt `councils` with the CHECK; they are now linked and mapped by the generated
+  `Council.lineage.ts`.
 - **Generated writes validate.** The stock `create`/`update` query verbs parse their input with
   the insert/update schema. This app's writes don't, so adopting the verbs would start rejecting
   rows written today (a client-supplied visitor cookie longer than `visitorId`'s 64 chars, for

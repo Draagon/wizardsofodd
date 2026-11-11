@@ -56,7 +56,7 @@ src/**/generated/     GENERATED code — drift-gated, never hand-edited
 scripts/              generate-assets.ts (local ComfyUI, one-off), generate-favicons.ts, verify-portraits.ts
 docs/                 architecture.md, how-metaobjects-is-used.md, adr/, runbook.md
 .claude/ .metaobjects/  the shipped agent-context (skills + AGENTS.md)
-migrations/           D1 migrations (hand-written SQL; schema is authored, not diffed here)
+migrations/           D1 migrations (0006 on: `meta migrate --dialect d1` output; 0001-0005 predate it)
 wrangler.jsonc  vite.config.ts  metaobjects.config.ts
 ```
 
@@ -66,10 +66,10 @@ wrangler.jsonc  vite.config.ts  metaobjects.config.ts
 npm install
 npm run gen:db          # meta gen — regenerate all generated code from the spine
 npm run demo:drift      # meta verify --templates --codegen — THE DRIFT GATE (must be green)
-npm run check           # gen:db → verify → tsc → vitest
+npm run check           # demo:drift → verify → verify:db → tsc → vitest (no regen: fails on drift)
 npm run dev             # wrangler dev (needs .dev.vars with ANTHROPIC_API_KEY)
 npm run build:web       # build the React SPA into public/
-npm run deploy          # wrangler deploy
+npm run deploy          # predeploy (check, verify:db:remote, build:web), then wrangler deploy
 ```
 
 See [`docs/runbook.md`](docs/runbook.md) for deploy / regen / rotate / smoke-test procedures.

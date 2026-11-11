@@ -10,7 +10,6 @@
     "run_worker_first": ["/api/*", "/c/*"]
   },
   "vars": {
-    "MODEL": "claude-sonnet-4-6",
     "MAX_QUESTIONS_PER_DAY": "5",
     "GLOBAL_MAX_PER_DAY": "200",
     "IP_MAX_PER_DAY": "10",

@@ -16,5 +16,8 @@ metadata:
         name: emitWizardTake
         toolName: emit_wizard_take
         payloadRef: WizardOutput
+        # The request the generated wrapper sends: model id and max_tokens.
+        model: claude-sonnet-4-6
+        maxTokens: 1024
         retryReminder: |-
           Your previous response was not a valid tool call. Call the named tool with an input matching its JSON schema. Do not include any text outside the tool call.

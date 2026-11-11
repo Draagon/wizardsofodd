@@ -131,7 +131,31 @@ Reference projects that admit friction are believed. Real things this project hi
 - **Generated writes validate.** The stock `create`/`update` query verbs parse their input with
   the insert/update schema. This app's writes don't, so adopting the verbs would start rejecting
   rows written today (a client-supplied visitor cookie longer than `visitorId`'s 64 chars, for
-  example). The owned queries generator keeps reads only.
+  example). So no `queriesFile()` is wired: the one generated read is the composition loader
+  (below), and the writes are hand-written Drizzle over the generated tables and enum constants.
+
+## Owned generators: why each one exists
+
+The entity modules, the barrel, the `<Entity>Names` constants, the prompt render handles and the
+docs site run as shipped from `@metaobjectsdev/codegen-ts/generators`; the project keeps no copy of
+them. Until MetaObjects 1.2.0 it carried ejected copies of `entity`, `barrel` and `queries`; the
+first two had no edits of their own (only an older header) and are gone. Each generator the project
+still owns emits something no shipped generator does (`meta gen --list --probe` is the catalog it
+was checked against), and says so in its header:
+
+| Generator | Emits | Why no shipped generator covers it |
+|---|---|---|
+| `compositionLoaders` (`codegen/generators/`) | `Council.queries.ts`: `findCouncilById` + `findCouncilWithTurns` | stock `queries` emits full CRUD for every entity, has no verb filter and no composition loader |
+| `structuredCompletion` | `toolcalls.ts`: forced `tool_use` wrappers with the toolcall's `@model` and `@maxTokens`, retry and fallback | nothing shipped reads `template.toolcall`; the shipped LLM generators parse a `template.prompt` text reply |
+| `sseFrames` | `council-frames.ts` | `template.streamFrame` is project-local vocabulary |
+| `lineageMappers` | `*.lineage.ts` copies along field `extends` | no shipped generator maps between related objects |
+| `mustacheTemplates` | `templates.ts`, the template text inlined for a Worker | shipped render handles resolve text through a provider at runtime |
+| `wizardData`, `wizardRegistry` | the typed roster and its render registry | they read instance data under `data/`, which shipped generators never read |
+
+The cost test the audit applies (authored lines against emitted lines) fails for most of these:
+they are larger than what they emit. They stay because the point is drift protection, not
+line count: each turns a metadata or data change into a regenerated, drift-gated file instead of
+a hand edit in several places.
 - **A nested-value-object FQN codegen bug** in an earlier `@metaobjectsdev/codegen-ts` surfaced
   from this project and was fixed upstream (the `promptRender` FQN handling in 0.15.18).
 

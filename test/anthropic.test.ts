@@ -1,103 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
-import { complete, completeStructured } from "../src/llm/anthropic";
-
-function fakeFetch(captured: { body?: any; headers?: any }) {
-  return async (_url: string, init: RequestInit) => {
-    captured.body = JSON.parse(init.body as string);
-    captured.headers = init.headers;
-    return new Response(
-      JSON.stringify({ content: [{ type: "text", text: "hello from the tower" }] }),
-      { status: 200, headers: { "content-type": "application/json" } },
-    );
-  };
-}
-
-describe("complete", () => {
-  it("posts to the Messages API and returns joined text", async () => {
-    const captured: { body?: any; headers?: any } = {};
-    const text = await complete({
-      apiKey: "sk-test",
-      model: "claude-sonnet-4-6",
-      system: "be a wizard",
-      messages: [{ role: "user", content: "hi" }],
-      maxTokens: 256,
-      fetchImpl: fakeFetch(captured) as unknown as typeof fetch,
-    });
-
-    expect(text).toBe("hello from the tower");
-    expect(captured.body.model).toBe("claude-sonnet-4-6");
-    expect(captured.body.system).toBe("be a wizard");
-    expect(captured.body.max_tokens).toBe(256);
-    expect(captured.body.messages).toEqual([{ role: "user", content: "hi" }]);
-    expect((captured.headers as Record<string, string>)["x-api-key"]).toBe("sk-test");
-    expect((captured.headers as Record<string, string>)["anthropic-version"]).toBe("2023-06-01");
-  });
-
-  it("throws on non-200 with status in message", async () => {
-    const badFetch = async () =>
-      new Response("nope", { status: 429, statusText: "Too Many Requests" });
-    await expect(
-      complete({
-        apiKey: "sk-test",
-        system: "s",
-        messages: [{ role: "user", content: "x" }],
-        fetchImpl: badFetch as unknown as typeof fetch,
-      }),
-    ).rejects.toThrow(/429/);
-  });
-
-  it("applies default model and max_tokens when omitted", async () => {
-    const captured: { body?: any } = {};
-    await complete({
-      apiKey: "sk-test",
-      system: "s",
-      messages: [{ role: "user", content: "x" }],
-      fetchImpl: (async (_url: string, init: RequestInit) => {
-        captured.body = JSON.parse(init.body as string);
-        return new Response(JSON.stringify({ content: [{ type: "text", text: "ok" }] }), { status: 200 });
-      }) as unknown as typeof fetch,
-    });
-    expect(captured.body.model).toBe("claude-sonnet-4-6");
-    expect(captured.body.max_tokens).toBe(400);
-  });
-
-  it("joins only text blocks and skips non-text blocks", async () => {
-    const fetchImpl = (async () =>
-      new Response(
-        JSON.stringify({
-          content: [
-            { type: "text", text: "foo" },
-            { type: "tool_use", id: "t1", name: "x", input: {} },
-            { type: "text", text: "bar" },
-          ],
-        }),
-        { status: 200 },
-      )) as unknown as typeof fetch;
-    const text = await complete({
-      apiKey: "sk-test",
-      system: "s",
-      messages: [{ role: "user", content: "x" }],
-      fetchImpl,
-    });
-    expect(text).toBe("foobar");
-  });
-
-  it("passes system through verbatim when given a SystemBlock[] (enables cache_control)", async () => {
-    const captured: { body?: any } = {};
-    const blocks = [{ type: "text" as const, text: "be a wizard", cache_control: { type: "ephemeral" as const } }];
-    await complete({
-      apiKey: "sk-test",
-      system: blocks,
-      messages: [{ role: "user", content: "hi" }],
-      fetchImpl: (async (_url: string, init: RequestInit) => {
-        captured.body = JSON.parse(init.body as string);
-        return new Response(JSON.stringify({ content: [{ type: "text", text: "ok" }] }), { status: 200 });
-      }) as unknown as typeof fetch,
-    });
-    expect(captured.body.system).toEqual(blocks);
-  });
-});
+import { completeStructured } from "../src/llm/anthropic";
 
 describe("completeStructured", () => {
   const schema = z.object({
@@ -124,9 +27,58 @@ describe("completeStructured", () => {
       messages: [{ role: "user", content: "u" }],
       toolName: "emit_take",
       toolSchema: schema,
+      model: "claude-sonnet-4-6",
+      maxTokens: 1024,
       fetchImpl,
     });
     expect(got).toEqual({ stance: "a", note: "hi" });
+  });
+
+  it("posts the given model, max_tokens, system and messages to the Messages API", async () => {
+    const captured: { body?: string; headers?: Record<string, string> } = {};
+    const blocks = [{ type: "text" as const, text: "be a wizard", cache_control: { type: "ephemeral" as const } }];
+    const fetchImpl: typeof fetch = (async (_url: string, init: RequestInit) => {
+      captured.body = init.body as string;
+      captured.headers = init.headers as Record<string, string>;
+      return new Response(
+        JSON.stringify({ content: [{ type: "tool_use", name: "t", input: { stance: "a", note: "n" } }] }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }) as unknown as typeof fetch;
+    await completeStructured<T>({
+      apiKey: "sk-test",
+      system: blocks,
+      messages: [{ role: "user", content: "hi" }],
+      toolName: "t",
+      toolSchema: schema,
+      model: "claude-sonnet-4-6",
+      maxTokens: 256,
+      fetchImpl,
+    });
+    const body = JSON.parse(captured.body!);
+    expect(body.model).toBe("claude-sonnet-4-6");
+    expect(body.max_tokens).toBe(256);
+    expect(body.system).toEqual(blocks);
+    expect(body.messages).toEqual([{ role: "user", content: "hi" }]);
+    expect(captured.headers?.["x-api-key"]).toBe("sk-test");
+    expect(captured.headers?.["anthropic-version"]).toBe("2023-06-01");
+  });
+
+  it("throws on non-200 with status in message", async () => {
+    const badFetch = (async () =>
+      new Response("nope", { status: 429, statusText: "Too Many Requests" })) as unknown as typeof fetch;
+    await expect(
+      completeStructured<T>({
+        apiKey: "sk-test",
+        system: "s",
+        messages: [{ role: "user", content: "x" }],
+        toolName: "t",
+        toolSchema: schema,
+        model: "claude-sonnet-4-6",
+        maxTokens: 1024,
+        fetchImpl: badFetch,
+      }),
+    ).rejects.toThrow(/429/);
   });
 
   it("sends tool_choice forcing the named tool", async () => {
@@ -144,6 +96,8 @@ describe("completeStructured", () => {
       messages: [{ role: "user", content: "u" }],
       toolName: "t",
       toolSchema: schema,
+      model: "claude-sonnet-4-6",
+      maxTokens: 1024,
       fetchImpl,
     });
     const body = JSON.parse(captured.body!);
@@ -164,6 +118,8 @@ describe("completeStructured", () => {
         messages: [{ role: "user", content: "u" }],
         toolName: "t",
         toolSchema: schema,
+        model: "claude-sonnet-4-6",
+        maxTokens: 1024,
         fetchImpl,
       }),
     ).rejects.toThrow(/no tool_use block/i);
@@ -180,6 +136,8 @@ describe("completeStructured", () => {
         messages: [{ role: "user", content: "u" }],
         toolName: "t",
         toolSchema: schema,
+        model: "claude-sonnet-4-6",
+        maxTokens: 1024,
         fetchImpl,
       }),
     ).rejects.toThrow(/validation/i);

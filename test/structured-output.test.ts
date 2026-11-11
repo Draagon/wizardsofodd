@@ -130,3 +130,28 @@ describe("structured outputs — retry/fallback contract", () => {
     expect(verdictCalls).toBe(2);  // initial + 1 retry
   });
 });
+
+describe("structured outputs — model and token budget come from the metadata", () => {
+  // metaobjects/toolcalls/*.yaml declare @model and @maxTokens on each template.toolcall;
+  // the generated wrappers pass them to the HTTP client, which holds no default of its own.
+  it("every tool call sends the toolcall's declared model and max_tokens", async () => {
+    const sent: Array<{ tool: string; model: unknown; maxTokens: unknown }> = [];
+    const fetchImpl: typeof fetch = async (_url, init) => {
+      const body = JSON.parse(((init?.body ?? "{}") as string));
+      const tool = body.tools[0].name as string;
+      sent.push({ tool, model: body.model, maxTokens: body.max_tokens });
+      return r(tool === "emit_wizard_take" ? VALID_TAKE_RESPONSE : VALID_VERDICT_RESPONSE);
+    };
+    for await (const _e of convene({
+      question: "q?",
+      apiKey: "test-key",
+      fetchImpl,
+      registry: WIZARD_REGISTRY.slice(0, 1),
+    })) { /* drain */ }
+    expect(sent.map((s) => s.tool)).toEqual(["emit_wizard_take", "emit_verdict"]);
+    for (const s of sent) {
+      expect(s.model).toBe("claude-sonnet-4-6");
+      expect(s.maxTokens).toBe(1024);
+    }
+  });
+});

@@ -2,12 +2,20 @@
 // wrappers around `completeStructured` that bake in the try → retry-with-
 // stricter-reminder → optional-fallback ladder.
 //
+// Why custom: no shipped generator reads template.toolcall. The shipped LLM
+// generators (extractor, output-parser, output-prompt) work from a template.prompt's
+// @responseRef and parse a text reply; this app's replies are forced tool_use
+// blocks validated against the payload's Zod schema, and nothing shipped emits the
+// call itself, its retry ladder or its fallback.
+//
 // Source of truth: every `template.toolcall` node in the loaded MetaRoot.
 // template.toolcall is a core MO subtype; wizardsofoddProvider EXTENDS it with the
-// Anthropic @retryReminder attr (src/codegen/wizardsofodd-provider.ts), wired in
+// Anthropic @retryReminder attr and @model (src/codegen/wizardsofodd-provider.ts), wired in
 // metaobjects.config.ts via the providers: [...] field. Each toolcall node carries:
 //   @toolName       wire tool name surfaced to Anthropic
 //   @payloadRef     value-object whose Insert Zod schema is the runtime tool schema
+//   @model          model id sent as the request's `model` (project provider)
+//   @maxTokens      token budget sent as the request's `max_tokens` (core attr)
 //   @retryReminder  reminder appended on retry when the initial call fails
 //   @fallback       (optional) canned payload returned on double-failure
 //
@@ -22,13 +30,15 @@
 // edits, no new prompt constants, no copy-pasted retry ladder.
 
 import type { Generator, EmittedFile, GenContext } from "@metaobjectsdev/codegen-ts";
-import { oncePerRun } from "@metaobjectsdev/codegen-ts";
+import { oncePerRun, GENERATED_EDIT_NOTE } from "@metaobjectsdev/codegen-ts";
 import {
   stripPackage,
   TYPE_TEMPLATE,
   TEMPLATE_SUBTYPE_TOOLCALL,
   TEMPLATE_ATTR_TOOL_NAME,
   TEMPLATE_ATTR_PAYLOAD_REF,
+  TEMPLATE_ATTR_MODEL,
+  TEMPLATE_ATTR_MAX_TOKENS,
 } from "@metaobjectsdev/metadata";
 // The Anthropic-flavored attrs live on the project provider; read them through
 // the SAME constants it registers them under (no declared-vs-read drift).
@@ -43,6 +53,10 @@ interface ToolcallSpec {
   payloadRef: string;
   /** Appended to the system prompt on retry when the initial call fails. */
   retryReminder: string;
+  /** Target model id (@model, registered on template.toolcall by the project provider). */
+  model: string;
+  /** Token budget for the structured response (core @maxTokens). */
+  maxTokens: number;
   /**
    * Optional canned payload returned on double-failure instead of rethrowing.
    * When present, must satisfy the payloadRef's type at runtime — embedded as
@@ -63,6 +77,8 @@ function discoverToolcalls(ctx: GenContext): ToolcallSpec[] {
     const payloadRef = child.attr(TEMPLATE_ATTR_PAYLOAD_REF);
     const retryReminder = child.attr(TEMPLATE_ATTR_RETRY_REMINDER);
     const fallback = child.attr(TEMPLATE_ATTR_FALLBACK);
+    const model = child.attr(TEMPLATE_ATTR_MODEL);
+    const maxTokens = child.attr(TEMPLATE_ATTR_MAX_TOKENS);
     if (typeof toolName !== "string" || !toolName) {
       throw new Error(`structured-completion: template.toolcall "${child.name}" is missing required @toolName`);
     }
@@ -72,6 +88,12 @@ function discoverToolcalls(ctx: GenContext): ToolcallSpec[] {
     if (typeof retryReminder !== "string" || !retryReminder) {
       throw new Error(`structured-completion: template.toolcall "${child.name}" is missing required @retryReminder`);
     }
+    if (typeof model !== "string" || !model) {
+      throw new Error(`structured-completion: template.toolcall "${child.name}" is missing required @model`);
+    }
+    if (typeof maxTokens !== "number" || !Number.isInteger(maxTokens) || maxTokens <= 0) {
+      throw new Error(`structured-completion: template.toolcall "${child.name}" is missing required @maxTokens (a positive integer)`);
+    }
     specs.push({
       name: child.name,
       toolName,
@@ -79,6 +101,8 @@ function discoverToolcalls(ctx: GenContext): ToolcallSpec[] {
       // strip the package for the local TS type + import path.
       payloadRef: stripPackage(payloadRef),
       retryReminder,
+      model,
+      maxTokens,
       ...(fallback !== undefined ? { fallback: fallback as Record<string, unknown> } : {}),
     });
   }
@@ -111,6 +135,8 @@ function emitToolcallFunction(spec: ToolcallSpec): string {
   // Strip a leading "Emit" if the YAML name already starts that way (e.g.
   // "emitWizardTake" → callEmitWizardTake, not callEmitEmitWizardTake).
   const reminderConst = `${screamingSnake(spec.name)}_REMINDER`;
+  const modelConst = `${screamingSnake(spec.name)}_MODEL`;
+  const maxTokensConst = `${screamingSnake(spec.name)}_MAX_TOKENS`;
   const payload = spec.payloadRef;
   const schemaImport = `${payload}InsertSchema`;
   const hasFallback = spec.fallback !== undefined;
@@ -121,6 +147,8 @@ function emitToolcallFunction(spec: ToolcallSpec): string {
       messages: p.messages,
       toolName: ${JSON.stringify(spec.toolName)},
       toolSchema: ${schemaImport},
+      model: ${modelConst},
+      maxTokens: ${maxTokensConst},
       ...optional,
     });`;
 
@@ -130,6 +158,8 @@ function emitToolcallFunction(spec: ToolcallSpec): string {
         messages: p.messages,
         toolName: ${JSON.stringify(spec.toolName)},
         toolSchema: ${schemaImport},
+        model: ${modelConst},
+        maxTokens: ${maxTokensConst},
         ...optional,
       });`;
 
@@ -164,7 +194,9 @@ ${retryBlock}
     ? `\nconst ${fallbackConst}: ${payload} = ${indentJsonAsTsLiteral(spec.fallback, 0)};\n`
     : "";
 
-  return `const ${reminderConst} =
+  return `const ${modelConst} = ${JSON.stringify(spec.model)};
+const ${maxTokensConst} = ${spec.maxTokens};
+const ${reminderConst} =
   ${JSON.stringify(spec.retryReminder)};
 ${fallbackDecl}
 export async function ${fnName}(p: ToolcallParams): Promise<${payload}> {
@@ -193,12 +225,13 @@ export const structuredCompletion = (): Generator => ({
 
     const functions = specs.map(emitToolcallFunction).join("\n");
 
-    const header = `// @generated by @metaobjectsdev/codegen-ts (via structured-completion) — DO NOT EDIT.
+    const header = `// @generated by @metaobjectsdev/codegen-ts (via structured-completion) — ${GENERATED_EDIT_NOTE}
 // AUTO-GENERATED — re-run \`npm run gen:db\`.
 // Source of truth: every template.toolcall node under metaobjects/.
 //
 // Each callEmit<Name>(params) wrapper calls completeStructured with the
-// configured tool name + payload schema. On a MALFORMED first response the
+// configured tool name, payload schema, model id and max_tokens (@model and
+// @maxTokens on the template.toolcall). On a MALFORMED first response the
 // wrapper retries ONCE with a stricter reminder appended to the system
 // prompt. If the YAML declares a \`fallback\`, malformed double-failure returns
 // the canned payload; otherwise it rethrows. Transport/API errors (rate limit,
@@ -214,7 +247,6 @@ export interface ToolcallParams {
   system: string | SystemBlock[];
   messages: AnthropicMessage[];
   fetchImpl?: typeof fetch;
-  model?: string;
 }
 
 /**
@@ -232,10 +264,9 @@ function withReminder(system: string | SystemBlock[], reminder: string): string 
  * Strip undefined optional keys so exactOptionalPropertyTypes-style strictness
  * in completeStructured does not see an explicit \`undefined\` and complain.
  */
-function pickOptional(p: ToolcallParams): { fetchImpl?: typeof fetch; model?: string } {
-  const o: { fetchImpl?: typeof fetch; model?: string } = {};
+function pickOptional(p: ToolcallParams): { fetchImpl?: typeof fetch } {
+  const o: { fetchImpl?: typeof fetch } = {};
   if (p.fetchImpl !== undefined) o.fetchImpl = p.fetchImpl;
-  if (p.model !== undefined) o.model = p.model;
   return o;
 }
 

@@ -21,11 +21,11 @@ protocol, with a build-time drift gate. See [`README.md`](README.md) and
 | Runtime | **Cloudflare Workers** (one Worker serves static assets + `/api/*`) |
 | Framework | [Hono](https://hono.dev/) |
 | Frontend | React 18 SPA (Vite) for the home route; pure-SSR React for `/c/:slug` share routes |
-| LLM | Anthropic Claude API (`claude-sonnet-4-6` by default) |
+| LLM | Anthropic Claude API (`claude-sonnet-4-6`, declared as `@model` on each `template.toolcall`) |
 | Persistence | Cloudflare D1 + Drizzle, schema + queries driven by MetaObjects codegen (ADR-0002) |
 | Rate limit / bot gate | Workers KV + Cloudflare Turnstile |
 | Search (optional, Lorekeeper's RAG) | a self-hosted SearXNG behind Cloudflare Access, via the `SEARCH_URL` secret; degrades gracefully if unset |
-| Metadata / codegen | `@metaobjectsdev/*@1.1.4` — loader, `meta gen` (codegen), `meta verify` (drift gate) |
+| Metadata / codegen | `@metaobjectsdev/*@1.2.0` — loader, `meta gen` (codegen), `meta verify` (drift gate) |
 | Tests | Vitest via `@cloudflare/vitest-pool-workers` + jsdom |
 
 ## Layout
@@ -40,7 +40,7 @@ metaobjects/          the metadata SPINE (typed, durable)
 data/                 instance data OUTSIDE the spine (loadMemory() treats metaobjects/ as metadata)
   wizards/*.yaml         the 10 wizard personas
   templates/            external Mustache prompt text (wizards/, verdict/)
-codegen/generators/   OWNED entity/queries/barrel generators (ADR-0034 scaffold-and-own)
+codegen/generators/   OWNED composition-loaders generator (Council + its ordered turns)
 src/
   index.ts              Hono Worker: council SSE endpoint, Env, Turnstile + rate-limit gates
   council/              orchestrator.ts (convene) · prompts.ts (compose generated handles)

@@ -189,6 +189,20 @@ that brought the live schema in line with the metadata's CHECKs) and
 `0007_link-verdict-and-council-id.sql` (rebuild for the verdict confidence CHECK,
 `council_turns.council_id` at the slug width, and the 600-char question cap).
 
+**Precheck before migration 0007.** Run these against production D1 before
+`npm run db:migrate:remote`:
+
+```sql
+SELECT count(*) FROM councils WHERE verdict_confidence < 0 OR verdict_confidence > 1;
+SELECT count(*) FROM councils WHERE length(question) > 600;
+SELECT count(*) FROM council_turns WHERE length(council_id) <> 8;
+```
+
+If the first returns a non-zero count, the rebuild's `INSERT` fails on the new
+confidence CHECK: stop, then correct or clamp those rows before migrating. The other
+two do not fail the migration (SQLite does not enforce `VARCHAR` widths) but mark rows
+that break the declared model: review them before migrating.
+
 **`db:migrate:remote` is NOT automatic** — for a change that adds a migration, run it
 against production D1 *before* `npm run deploy`. The `predeploy` step runs
 `npm run verify:db:remote`, which fails on the schema drift until the migration is

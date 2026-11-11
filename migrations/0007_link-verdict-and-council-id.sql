@@ -1,3 +1,14 @@
+-- PRECHECK: run these against production D1 BEFORE `npm run db:migrate:remote`.
+--
+--   SELECT count(*) FROM councils WHERE verdict_confidence < 0 OR verdict_confidence > 1;
+--   SELECT count(*) FROM councils WHERE length(question) > 600;
+--   SELECT count(*) FROM council_turns WHERE length(council_id) <> 8;
+--
+-- If the first returns a non-zero count, the rebuild's INSERT fails on the new
+-- confidence CHECK: stop, then correct or clamp those rows before migrating.
+-- The other two do not fail the migration (SQLite does not enforce VARCHAR
+-- widths) but mark rows that break the declared model: review them before migrating.
+
 PRAGMA defer_foreign_keys = ON;
 
 CREATE TABLE "__f_councils" (

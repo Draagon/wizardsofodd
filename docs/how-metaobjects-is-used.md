@@ -27,8 +27,9 @@ field `extends` the shared abstract enum `wizardStance`
 ([`abstracts/meta-stance-enums.yaml`](../metaobjects/abstracts/meta-stance-enums.yaml)) — declared
 once, reused by `WizardOutput`, `TurnLens`, and `CouncilTurn`. From that one spine:
 
-- `entityFile`/`queriesFile` emit `src/db/generated/WizardOutput.ts` (Zod) and, for the
-  *entities* that persist these fields, Drizzle tables + typed finders. Because several fields
+- `entityFile` emits `src/db/generated/WizardOutput.ts` (Zod) and, for the
+  *entities* that persist these fields, Drizzle tables; the owned `compositionLoaders` emits the
+  typed council read. Because several fields
   share `wizardStance`, codegen also emits a single `src/db/generated/enums.ts` the entities
   reference — the de-duplication carries through to the generated code.
 - `promptRender` emits a typed render payload + handles in `src/render/generated/prompts.ts`.
@@ -133,6 +134,8 @@ Reference projects that admit friction are believed. Real things this project hi
   rows written today (a client-supplied visitor cookie longer than `visitorId`'s 64 chars, for
   example). So no `queriesFile()` is wired: the one generated read is the composition loader
   (below), and the writes are hand-written Drizzle over the generated tables and enum constants.
+- **A nested-value-object FQN codegen bug** in an earlier `@metaobjectsdev/codegen-ts` surfaced
+  from this project and was fixed upstream (the `promptRender` FQN handling in 0.15.18).
 
 ## Owned generators: why each one exists
 
@@ -156,8 +159,6 @@ The cost test the audit applies (authored lines against emitted lines) fails for
 they are larger than what they emit. They stay because the point is drift protection, not
 line count: each turns a metadata or data change into a regenerated, drift-gated file instead of
 a hand edit in several places.
-- **A nested-value-object FQN codegen bug** in an earlier `@metaobjectsdev/codegen-ts` surfaced
-  from this project and was fixed upstream (the `promptRender` FQN handling in 0.15.18).
 
 ## Pointers
 

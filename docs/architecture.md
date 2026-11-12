@@ -36,7 +36,7 @@ A single Cloudflare Worker handles everything:
         │       RATE_LIMIT  KVNamespace                            │
         │       DB          D1Database  (councils + council_turns) │
         │     Vars:                                                │
-        │       MODEL, MAX_QUESTIONS_PER_DAY, GLOBAL_MAX_PER_DAY,  │
+        │       MAX_QUESTIONS_PER_DAY, GLOBAL_MAX_PER_DAY,         │
         │       KILL_SWITCH, SEARCH_URL                            │
         │     Secrets:                                             │
         │       ANTHROPIC_API_KEY                                  │
@@ -79,7 +79,8 @@ A single Cloudflare Worker handles everything:
    - Build user message (`buildWizardMessages`): the question + each prior
      wizard's reply (so wizards can react to each other) + the shared sources
      block (so any wizard can cite real URLs, not just Lorekeeper).
-   - Call `complete()` against Anthropic. Per-wizard try/catch: on success,
+   - Call `callEmitWizardTake()` (generated from the `emitWizardTake` toolcall, which
+     declares the model id and `max_tokens`) against Anthropic. Per-wizard try/catch: on success,
      emit `event: wizard` SSE frame and push the turn into `prior`; on throw,
      emit `event: error` with an in-character "lost in thought" message and
      skip pushing.

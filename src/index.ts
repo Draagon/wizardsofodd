@@ -23,7 +23,6 @@ export interface Env {
   RATE_LIMIT: KVNamespace;
   DB: D1Database;
   ANTHROPIC_API_KEY: string;
-  MODEL: string;
   MAX_QUESTIONS_PER_DAY: string;
   GLOBAL_MAX_PER_DAY: string;
   KILL_SWITCH: string;
@@ -159,7 +158,6 @@ app.post("/api/council", async (c) => {
   const { visitorId, setCookie } = gate;
 
   const apiKey = c.env.ANTHROPIC_API_KEY;
-  const model = c.env.MODEL || "claude-sonnet-4-6";
 
   const db = getDb(c.env);
   const slug = await insertCouncil(db, { visitorId, question });
@@ -179,7 +177,7 @@ app.post("/api/council", async (c) => {
         });
         let ordinal = 0;
         const registry = selectRegistry(WIZARD_REGISTRY, wizardIds);
-        for await (const frame of convene({ question, apiKey, model, search: searchClient, registry })) {
+        for await (const frame of convene({ question, apiKey, search: searchClient, registry })) {
           // Persist first, then forward the same frame to the client.
           if (frame.event === COUNCIL_EVENTS.wizard) {
             await recordWizardTurn(db, slug, { ordinal: ++ordinal, ...frame.data });

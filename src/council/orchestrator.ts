@@ -39,12 +39,10 @@ export interface ConveneParams {
   search?: SearchFn;
   /** Test seam — forwarded to `completeStructured`. */
   fetchImpl?: typeof fetch;
-  /** Optional model override; defaults to the value baked into `completeStructured`. */
-  model?: string;
 }
 
 export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEvent> {
-  const { question, search, apiKey, fetchImpl, model } = params;
+  const { question, search, apiKey, fetchImpl } = params;
   const registry = params.registry ?? WIZARD_REGISTRY;
   const all = registry.map((e) => e.wizard);
   const prior: PriorTurn[] = [];
@@ -91,7 +89,7 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
       const userContent = entry.renderUser(buildWizardUserPayload(question, prior, sources), templateProvider).trimEnd();
 
       const take = await callEmitWizardTake({
-        apiKey, fetchImpl, model, system: wizardSystem, messages: [{ role: "user", content: userContent }],
+        apiKey, fetchImpl, system: wizardSystem, messages: [{ role: "user", content: userContent }],
       });
       prior.push({ persona: wizard, take });
       yield { event: COUNCIL_EVENTS.wizard, data: { wizardId: wizard.id, wizardName: name, take } };
@@ -120,7 +118,7 @@ export async function* convene(params: ConveneParams): AsyncGenerator<CouncilEve
   const vSys = buildVerdictSystem(all);
   const vMsgs = buildVerdictMessages(question, prior);
   try {
-    const verdict = await callEmitVerdict({ apiKey, fetchImpl, model, system: vSys, messages: vMsgs });
+    const verdict = await callEmitVerdict({ apiKey, fetchImpl, system: vSys, messages: vMsgs });
     yield { event: COUNCIL_EVENTS.verdict, data: { verdict } };
   } catch {
     // A malformed verdict is absorbed by emitVerdict's canned fallback inside

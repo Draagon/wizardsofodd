@@ -43,48 +43,18 @@ export type SystemBlock = {
   cache_control?: { type: "ephemeral" };
 };
 
-export interface CompleteParams {
+const API_URL = "https://api.anthropic.com/v1/messages";
+
+export interface CompleteStructuredParams<T> {
   apiKey: string;
   system: string | SystemBlock[];
   messages: AnthropicMessage[];
-  model?: string;
-  maxTokens?: number;
+  /** Model id. No default here: the generated toolcall wrappers pass the toolcall's @model. */
+  model: string;
+  /** max_tokens. No default here: the generated toolcall wrappers pass the toolcall's @maxTokens. */
+  maxTokens: number;
   /** injectable for tests; defaults to global fetch */
   fetchImpl?: typeof fetch;
-}
-
-const API_URL = "https://api.anthropic.com/v1/messages";
-
-export async function complete(params: CompleteParams): Promise<string> {
-  const doFetch = params.fetchImpl ?? fetch;
-  const res = await doFetch(API_URL, {
-    method: "POST",
-    headers: {
-      "x-api-key": params.apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: params.model ?? "claude-sonnet-4-6",
-      max_tokens: params.maxTokens ?? 400,
-      system: params.system,
-      messages: params.messages,
-    }),
-  });
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw new AnthropicTransportError(`Anthropic API error ${res.status} ${res.statusText}: ${detail.slice(0, 200)}`, res.status);
-  }
-
-  const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
-  return (data.content ?? [])
-    .filter((b) => b.type === "text" && typeof b.text === "string")
-    .map((b) => b.text as string)
-    .join("");
-}
-
-export interface CompleteStructuredParams<T> extends CompleteParams {
   /** Tool name; Anthropic emits a tool_use block with this name. */
   toolName: string;
   /** Tool description shown to the model (kept short — the schema does the heavy lifting). */
@@ -104,8 +74,8 @@ export async function completeStructured<T>(params: CompleteStructuredParams<T>)
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: params.model ?? "claude-sonnet-4-6",
-      max_tokens: params.maxTokens ?? 1024,
+      model: params.model,
+      max_tokens: params.maxTokens,
       system: params.system,
       messages: params.messages,
       tools: [{

@@ -44,13 +44,14 @@ exact config, generator names and commands for this project; read it. The other 
 | `references/dependencies-and-shared-models.md` | the project consumes or publishes metadata across projects |
 | `references/typescript-document-store.md` | a TypeScript project on MongoDB, or any store MetaObjects does not manage, wanting a tested repository generator |
 | `references/typescript-mysql.md` | a TypeScript project on a MySQL database |
+| `references/typescript-prisma.md` | a TypeScript project that keeps Prisma as its ORM |
 | `references/typescript-retargeting.md` | a TypeScript project on a framework other than Fastify, Hono or React |
 | `references/typescript-templates.md` | declarative Mustache template-codegen in a TypeScript project |
 | `references/typescript-docs.md` | the docs generators (`docsFile`, `apiDocsFile`, `agentDocsFile`, `requirementsFile`, `metamodelDocsFile`, `docsSiteFile`) in a TypeScript project |
 
 ## Upgrading a project from 1.0 to 1.1
 
-Read the one upgrade guide, https://github.com/metaobjectsdev/metaobjects/blob/v1.1.4/docs/features/migrations/upgrading-1.0-to-1.1.md, before the first `gen`, for every
+Read the one upgrade guide, https://github.com/metaobjectsdev/metaobjects/blob/v1.2.0/docs/features/migrations/upgrading-1.0-to-1.1.md, before the first `gen`, for every
 port the project uses; the build can stay green while the result is wrong. It lists the steps
 in order and every change that needs action.
 
@@ -71,7 +72,7 @@ in order and every change that needs action.
   `eject --list`; `dotnet meta gen --list`; `mvn metaobjects:eject -Dlist=true` in Java and Kotlin)
   reports each copy that differs from the reference;
   `eject <name> --force` takes the new reference for a copy you never edited, and a copy you
-  edited is three-way merged instead. Steps for 1.0.x: https://github.com/metaobjectsdev/metaobjects/blob/v1.1.4/docs/features/migrations/upgrading-within-1.0.md.
+  edited is three-way merged instead. Steps for 1.0.x: https://github.com/metaobjectsdev/metaobjects/blob/v1.2.0/docs/features/migrations/upgrading-within-1.0.md.
 
 ## Need an output? Write the generator — this is the primary path
 
@@ -147,7 +148,7 @@ without typechecking, so a wrong accessor runs silently.
 Every port's minimal generator (each run through gen, verify and a convicted model
 change) and two worked examples to copy — JSON Schema and OpenAPI 3.1, examples and not a
 product surface — are in the guide "Write your own generator":
-<https://github.com/metaobjectsdev/metaobjects/blob/v1.1.4/docs/recipes/write-your-own-generator.md>.
+<https://github.com/metaobjectsdev/metaobjects/blob/v1.2.0/docs/recipes/write-your-own-generator.md>.
 
 **Use a stock generator as shipped** when one already emits what you need:
 `meta gen --list --probe` is the catalog, and each row says how to wire it with nothing

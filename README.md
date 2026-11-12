@@ -22,11 +22,11 @@ disposable artifact. This app is a working proof: **one spine → many outputs, 
 
 | Metadata (`metaobjects/`, `data/`) | Generator | Generated artifact | Consumed by |
 |---|---|---|---|
-| `object.entity` (Council, CouncilTurn) — `source.rdb`, identity, `field.enum`, `field.object`, `relationship.composition` | `entityFile` / `queriesFile` | Drizzle D1 tables + Zod + typed finders + the `findCouncilWithTurns` aggregate read (`src/db/generated/`) | `src/db/queries.ts`, share routes |
+| `object.entity` (Council, CouncilTurn) — `source.rdb`, identity, `field.enum`, `field.object`, `relationship.composition` | `entityFile` (shipped) / `compositionLoaders` (owned) | Drizzle D1 tables + Zod + the `findCouncilWithTurns` aggregate read (`src/db/generated/`) | `src/db/queries.ts`, share routes |
 | field-level `extends: <Source>.<field>` lineage | `lineageMappers` (custom) | typed copies between `WizardOutput` and its descendants, and the public `SharedCouncil` view of a council row (`src/db/generated/*.lineage.ts`) | persistence, share page + JSON, prompt payloads |
 | `object.value` payloads + `template.prompt` | `promptRender` | typed render handles (`src/render/generated/prompts.ts`) | `src/council/prompts.ts` |
 | Mustache text (`data/templates/`) | `mustacheTemplates` (custom) | inlined template map + its `templateProvider` (`.../templates.ts`) | every render call |
-| `template.toolcall` | `structuredCompletion` (custom) | Anthropic `tool_use` wrappers + retry/fallback ladder (`src/llm/generated/toolcalls.ts`) | orchestrator |
+| `template.toolcall` (with `@model`, `@maxTokens`) | `structuredCompletion` (custom) | Anthropic `tool_use` wrappers carrying the model id and token budget + retry/fallback ladder (`src/llm/generated/toolcalls.ts`) | orchestrator |
 | `template.streamFrame` (a **project-local subtype**) | `sseFrames` (custom) | `CouncilFrame` discriminated union + `encodeCouncilFrame` / `toCouncilFrame` (`src/web/generated/council-frames.ts`) | orchestrator, Worker **and** React reducer |
 | Wizard instance data (`data/wizards/`) | `wizardData` + `wizardRegistry` (custom) | typed roster + render registry (`src/personas/generated/`) | orchestrator + gallery |
 
@@ -132,7 +132,7 @@ Portraits/background are AI-generated (local SDXL) and covered by the repo licen
 ```
 metaobjects/      the metadata spine (entities, value-objects, prompts, toolcalls, sse-frames)
 data/             instance data OUTSIDE the metadata: wizard YAML + Mustache prompt text
-codegen/          owned generators (entity/queries/barrel — ADR-0034 scaffold-and-own)
+codegen/          owned composition-loaders generator (entity, barrel and names run as shipped)
 src/codegen/      custom generators + the project provider
 src/**/generated/ generated code (drift-gated; never hand-edited)
 src/             the Worker: council orchestrator, D1 layer, LLM calls, React SPA, SSR share pages

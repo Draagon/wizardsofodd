@@ -1,27 +1,13 @@
 import { defineConfig } from "@metaobjectsdev/cli";
-// ADR-0034 scaffold-and-own: entityFile / queriesFile / barrel are OWNED local
-// copies (scaffolded from @metaobjectsdev/codegen-ts/src/reference/*). We import
-// them from ./codegen/generators, not the package — 1.0 REMOVED those four
-// (entity/queries/routes/barrel) from `@metaobjectsdev/codegen-ts/generators`
-// entirely; they were @deprecated on 0.24/0.25 and there is no longer an export
-// to fall back to (ADR-0035 A3, 1.0-readiness G2). Owning the copy means the
-// generated shape is ours to change and can never drift out from under us.
-import { entityFile } from "./codegen/generators/entity";
-import { queriesFile } from "./codegen/generators/queries";
-import { barrel } from "./codegen/generators/barrel";
-// The /generators subpath STAYS, and everything still exported from it is
-// supported public API — the removal was scoped by NAME, not by path. Two axes
-// get confused here, so state both:
-//   - ownable?   `meta eject --list` names all nine, INCLUDING `names` and
-//                `routes-hono`. Having an ownable reference copy is not the same
-//                as being removed from the package.
-//   - removed?   only entity / queries / routes / barrel.
-// So `promptRender` (upstream-owned render engine, no ownable copy) and
-// `namesFile` (a stock generator that DOES have an ownable copy, and is still
-// exported) are both correctly imported from the package here. Don't cargo-cult
-// "own everything" — own a copy when you intend to change its emit; this project
-// changed entity/queries/barrel and has no reason to fork the names artifact.
-import { docsSiteFile, namesFile, promptRender } from "@metaobjectsdev/codegen-ts/generators";
+// The entity modules, the barrel, the <Entity>Names constants and the prompt render
+// handles are the SHIPPED generators, imported as-is: this project changes nothing
+// they emit, so it owns no copy of them (an unchanged owned copy only falls behind
+// the reference; `meta eject --list` reports any it finds).
+import { barrel, docsSiteFile, entityFile, namesFile, promptRender } from "@metaobjectsdev/codegen-ts/generators";
+// Owned generators: each emits something no shipped generator does, and its header
+// says what and why. codegen/generators/ holds the one for the persistence target;
+// src/codegen/ holds the ones for prompts, personas, tool calls and SSE frames.
+import { compositionLoaders } from "./codegen/generators/composition-loaders";
 import { mustacheTemplates } from "./src/codegen/mustache-templates-generator";
 import { wizardData } from "./src/codegen/wizard-data-generator";
 import { wizardRegistry } from "./src/codegen/wizard-registry-generator";
@@ -61,8 +47,8 @@ export default defineConfig({
   importBase: "../../db/generated",
   dialect: "sqlite",
   // No `dbImport`: since 0.24.3 it is demanded at the point of USE — by a generator
-  // that actually emits `import { db } from …`. This project's OWNED queries generator
-  // takes `db` as an explicit parameter (see src/db/generated/*.queries.ts) and the
+  // that actually emits `import { db } from …`. This project's composition loaders
+  // take `db` as an explicit parameter (see src/db/generated/*.queries.ts) and the
   // Worker builds its client per request, so nothing here ever reads it. Earlier
   // versions demanded it from the model, which is why a placeholder used to sit here.
   // Pin extensionless relative imports. This project compiles under `moduleResolution:
@@ -91,7 +77,10 @@ export default defineConfig({
   },
   generators: [
     entityFile(),
-    queriesFile(),
+    // The only generated read: find<Root>With<Parts> for a composition (Council + its
+    // turns). No `queriesFile()`: this app's writes are hand-written, status-guarded
+    // Drizzle updates (src/db/queries.ts), so stock CRUD helpers would go unused.
+    compositionLoaders(),
     // <Entity>Names — the physical table/column names as importable constants, so a
     // name is spelled ONCE per run and every other reader points at it (1.0 §A1/§A5).
     // OPT-IN on TypeScript: `generators: [...]` IS the complete suite here, exactly

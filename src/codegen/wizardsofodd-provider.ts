@@ -1,4 +1,4 @@
-// Project-local MetaDataTypeProvider: adds an Anthropic-specific attr to the core
+// Project-local MetaDataTypeProvider: adds two attrs to the core
 // `template.toolcall` subtype AND registers a project-specific
 // `template.streamFrame` subtype.
 //
@@ -8,6 +8,11 @@
 // retry-with-reminder string used when an initial tool call fails to parse
 // cleanly. Future OpenAI / Mistral / MCP consumers would add their own vendor
 // attrs the same way via registry.extend.
+//
+// It also adds @model, the target model id. Core declares @model on template.prompt
+// (the LLM overlay, peer of @maxTokens) but not on template.toolcall, which carries
+// @maxTokens only. Here the toolcall is what makes the request, so the model it
+// targets is declared beside its token budget, under the same core attr name.
 //
 // @fallback (the canned payload returned on double-failure) is NOT a first-class
 // attr. Under strict metadata provenance (ADR-0023) an undeclared @-attr fails
@@ -34,6 +39,7 @@ import {
   ATTR_SUBTYPE_STRING,
   TEMPLATE_SUBTYPE_TOOLCALL,
   TEMPLATE_ATTR_PAYLOAD_REF,
+  TEMPLATE_ATTR_MODEL,
   MetaTemplate,
   TypeId,
 } from "@metaobjectsdev/metadata";
@@ -52,7 +58,7 @@ export const wizardsofoddProvider: MetaDataTypeProvider = {
   id: "wizardsofodd-anthropic-toolcall",
   dependencies: ["metaobjects-core-types"],
   description:
-    "Extends core template.toolcall with an Anthropic-flavored wire attr (@retryReminder); registers the project-local template.streamFrame subtype.",
+    "Extends core template.toolcall with an Anthropic-flavored wire attr (@retryReminder) and the target model id (@model); registers the project-local template.streamFrame subtype.",
   registerTypes(registry) {
     registry.extend(TYPE_TEMPLATE, TEMPLATE_SUBTYPE_TOOLCALL, {
       attributes: [
@@ -62,6 +68,13 @@ export const wizardsofoddProvider: MetaDataTypeProvider = {
           required: false,
           description:
             "Anthropic-specific: reminder string appended to the system prompt on retry when the initial tool_use call fails to parse.",
+        },
+        {
+          name: TEMPLATE_ATTR_MODEL,
+          valueType: ATTR_SUBTYPE_STRING,
+          required: false,
+          description:
+            "Target model id for this tool call (LLM-specific). Same name and meaning as core @model on template.prompt.",
         },
       ],
     });

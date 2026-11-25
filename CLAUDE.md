@@ -69,7 +69,7 @@ npm run demo:drift      # meta verify --templates --codegen — THE DRIFT GATE (
 npm run check           # demo:drift → verify → verify:db → tsc → vitest (no regen: fails on drift)
 npm run dev             # wrangler dev (needs .dev.vars with ANTHROPIC_API_KEY)
 npm run build:web       # build the React SPA into public/
-npm run deploy          # predeploy (check, verify:db:remote, build:web), then wrangler deploy
+npm run deploy          # predeploy (check, verify:db:remote, build:web), then wrangler deploy via scripts/cf-deploy.sh (narrow deploy token)
 ```
 
 See [`docs/runbook.md`](docs/runbook.md) for deploy / regen / rotate / smoke-test procedures.

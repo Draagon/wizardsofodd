@@ -16,6 +16,18 @@ schema drift, `tsc`, the test suite), then `npm run verify:db:remote` (productio
 schema drift) and `npm run build:web`, and stops at the first failure. Never call
 `wrangler deploy` directly: it skips every one of those gates.
 
+**Deploy credentials.** `npm run deploy`, `npm run db:migrate:remote` and
+`npm run verify:db:remote` run through [`scripts/cf-deploy.sh`](../scripts/cf-deploy.sh),
+which uses the site's narrow deploy-only token, not `wrangler login` OAuth or an
+account-wide key. It pulls `CLOUDFLARE_WORKERS_TOKEN_WIZARDSOFODD` and
+`CLOUDFLARE_ACCOUNT_ID` from Infisical (`deploy` project, `dev` env) via `keys-axi run`,
+exposes the token to wrangler as `CLOUDFLARE_API_TOKEN`, drops any inherited
+`CLOUDFLARE_EMAIL` / `CLOUDFLARE_API_KEY` / `CLOUDFLARE_API_TOKEN`, and runs the
+repo's own pinned wrangler from `node_modules/.bin`. The token covers Workers
+Scripts, D1 and Workers KV writes plus Account Settings read on the account, and
+Workers Routes write plus Zone read on `wizardsofodd.com` only, so a command outside
+that scope (such as `wrangler tail`) still needs your own login.
+
 Production deploys are direct from `main`. Smoke-check:
 
 ```bash
